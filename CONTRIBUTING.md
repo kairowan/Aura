@@ -295,9 +295,9 @@ Every pull request runs the backend regression workflow at [.github/workflows/ba
 
 ## Need Help?
 
-- Check existing [Issues](https://github.com/bytedance/aura/issues)
+- Check existing [Issues](https://github.com/bytedance/deer-flow/issues)
 - Read the [Documentation](backend/docs/)
-- Ask questions in [Discussions](https://github.com/bytedance/aura/discussions)
+- Ask questions in [Discussions](https://github.com/bytedance/deer-flow/discussions)
 
 ## License
 

@@ -14,7 +14,7 @@ Aura (**D**eep **E**xploration and **E**fficient **R**esearch **Flow**) est un *
 https://github.com/user-attachments/assets/a8bcadc4-e040-4cf2-8fda-dd768b999c18
 
 > [!NOTE]
-> **Aura 2.0 est une réécriture complète.** Il ne partage aucun code avec la v1. Si vous cherchez le framework Deep Research original, il est maintenu sur la [branche `1.x`](https://github.com/bytedance/aura/tree/main-1.x) — les contributions y sont toujours les bienvenues. Le développement actif a migré vers la 2.0.
+> **Aura 2.0 est une réécriture complète.** Il ne partage aucun code avec la v1. Si vous cherchez le framework Deep Research original, il est maintenu sur la [branche `1.x`](https://github.com/bytedance/deer-flow/tree/main-1.x) — les contributions y sont toujours les bienvenues. Le développement actif a migré vers la 2.0.
 
 ## Site officiel
 
@@ -81,7 +81,7 @@ Aura intègre désormais le toolkit de recherche et de crawling intelligent dév
 1. **Cloner le dépôt Aura**
 
    ```bash
-   git clone https://github.com/bytedance/aura.git
+   git clone https://github.com/bytedance/deer-flow.git
    cd aura
    ```
 
@@ -425,7 +425,7 @@ Le skill `claude-to-aura` vous permet d'interagir avec une instance Aura en cour
 **Installer le skill** :
 
 ```bash
-npx skills add https://github.com/bytedance/aura --skill claude-to-aura
+npx skills add https://github.com/bytedance/deer-flow --skill claude-to-aura
 ```
 
 Assurez-vous ensuite que Aura tourne (par défaut sur `http://localhost:2026`) et utilisez la commande `/claude-to-aura` dans Claude Code.

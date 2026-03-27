@@ -8,7 +8,7 @@
 
 ## ⚠️ 版权与开源声明 (Disclaimer)
 
-本项目是基于 **[字节跳动 (Bytedance) 官方开源的 Aura 项目](https://github.com/bytedance/aura)** 进行的二次开发（Fork & Secondary Development）。
+本项目是基于 **[字节跳动 (Bytedance) 官方开源的 Aura 项目](https://github.com/bytedance/deer-flow)** 进行的二次开发（Fork & Secondary Development）。
 原项目遵循 **MIT 开源许可证**发布。
 
 1. 我们严格遵守原有的 MIT 开源协议，保留了原项目目录下的 `LICENSE` 版权声明文件。

@@ -1,4 +1,4 @@
-# 💠 [About Aura 2.0](https://github.com/bytedance/aura)
+# 💠 [About Aura 2.0](https://github.com/bytedance/deer-flow)
 
 > **From Open Source, Back to Open Source**
 
@@ -10,7 +10,7 @@ different levels of tasks that could take minutes to hours.
 
 ## 🌟 GitHub Repository
 
-Explore Aura on GitHub: [github.com/bytedance/aura](https://github.com/bytedance/aura)
+Explore Aura on GitHub: [github.com/bytedance/deer-flow](https://github.com/bytedance/deer-flow)
 
 ## 🌐 Official Website
 

@@ -8,7 +8,7 @@
 
 ## ⚠️ Disclaimer & Copyright
 
-This project is a secondary development (fork) based on **[Bytedance's open-source Aura project](https://github.com/bytedance/aura)**. 
+This project is a secondary development (fork) based on **[Bytedance's open-source Aura project](https://github.com/bytedance/deer-flow)**. 
 The original project is released under the **MIT License**.
 
 1. We strictly comply with the original MIT open-source agreement and have retained the original `LICENSE` file in the project directory.

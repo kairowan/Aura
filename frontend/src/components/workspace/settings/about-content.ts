@@ -2,7 +2,7 @@
  * About Aura markdown content. Inlined to avoid raw-loader dependency
  * (Turbopack cannot resolve raw-loader for .md imports).
  */
-export const aboutMarkdown = `# 💠 [About Aura 2.0](https://github.com/bytedance/aura)
+export const aboutMarkdown = `# 💠 [About Aura 2.0](https://github.com/bytedance/deer-flow)
 
 > **From Open Source, Back to Open Source**
 
@@ -24,7 +24,7 @@ Aura (**D**eep **E**xploration and **E**fficient **R**esearch **Flow**) is an op
 
 ![Star History Chart](https://api.star-history.com/svg?repos=bytedance/aura&type=Date)
 
-Explore Aura on GitHub: [github.com/bytedance/aura](https://github.com/bytedance/aura)
+Explore Aura on GitHub: [github.com/bytedance/deer-flow](https://github.com/bytedance/deer-flow)
 
 ## 🌐 Official Website
 
