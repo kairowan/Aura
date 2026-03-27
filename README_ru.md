@@ -10,7 +10,7 @@
 
 > 28 февраля 2026 года Aura занял 🏆 #1 в GitHub Trending после релиза версии 2. Спасибо огромное нашему сообществу — всё благодаря вам! 💪🔥
 
-Aura (**D**eep **E**xploration and **E**fficient **R**esearch **Flow**) — open-source **Super Agent Harness**, который управляет **Sub-Agents**, **Memory** и **Sandbox** для решения почти любой задачи. Всё на основе расширяемых **Skills**.
+Deer-Flow (**D**eep **E**xploration and **E**fficient **R**esearch **Flow**) — open-source **Super Agent Harness**, который управляет **Sub-Agents**, **Memory** и **Sandbox** для решения почти любой задачи. Всё на основе расширяемых **Skills**.
 
 https://github.com/user-attachments/assets/a8bcadc4-e040-4cf2-8fda-dd768b999c18
 
@@ -438,4 +438,4 @@ Aura стоит на плечах open-source сообщества. Спасиб
 
 ## История звёзд
 
-[![Star History Chart](https://api.star-history.com/svg?repos=bytedance/aura&type=Date)](https://star-history.com/#bytedance/aura&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=bytedance/deer-flow&type=Date)](https://star-history.com/#bytedance/deer-flow&Date)

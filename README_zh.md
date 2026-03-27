@@ -1,4 +1,4 @@
-# 💠 Aura (基于字节跳动 Aura 二开版)
+# 💠 Aura (基于字节跳动 Deer-Flow 二开版)
 
 [English](README.md) | [简体中文](README_zh.md) | [日本語](README_ja.md) | [Français](README_fr.md) | [Русский](README_ru.md)
 
@@ -12,7 +12,7 @@
 原项目遵循 **MIT 开源许可证**发布。
 
 1. 我们严格遵守原有的 MIT 开源协议，保留了原项目目录下的 `LICENSE` 版权声明文件。
-2. 我们对字节跳动 Aura 团队在 Super Agent Harness 领域的卓越开源贡献表示诚挚的感谢！
+2. 我们对字节跳动 Deer-Flow 团队在 Super Agent Harness 领域的卓越开源贡献表示诚挚的感谢！
 3. 本二开版本与字节跳动官方无任何商业从属关系，本项目产生的任何后果与原作者无关。
 
 ---

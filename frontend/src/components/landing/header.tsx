@@ -44,7 +44,7 @@ async function StarCounter() {
 
   try {
     const response = await fetch(
-      "https://api.github.com/repos/bytedance/aura",
+      "https://api.github.com/repos/bytedance/deer-flow",
       {
         headers: env.GITHUB_OAUTH_TOKEN
           ? {

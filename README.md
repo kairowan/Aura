@@ -1,4 +1,4 @@
-# 💠 Aura (Based on Bytedance Aura)
+# 💠 Aura (Based on Bytedance Deer-Flow)
 
 [English](README.md) | [简体中文](README_zh.md) | [日本語](README_ja.md) | [Français](README_fr.md) | [Русский](README_ru.md)
 
@@ -8,11 +8,11 @@
 
 ## ⚠️ Disclaimer & Copyright
 
-This project is a secondary development (fork) based on **[Bytedance's open-source Aura project](https://github.com/bytedance/deer-flow)**. 
+This project is a secondary development (fork) based on **[Bytedance's open-source Deer-Flow project](https://github.com/bytedance/deer-flow)**. 
 The original project is released under the **MIT License**.
 
 1. We strictly comply with the original MIT open-source agreement and have retained the original `LICENSE` file in the project directory.
-2. We express our sincere gratitude to the Bytedance Aura team for their outstanding contributions to the Super Agent Harness ecosystem.
+2. We express our sincere gratitude to the Bytedance Deer-Flow team for their outstanding contributions to the Super Agent Harness ecosystem.
 3. This secondary development version has no commercial affiliation with Bytedance, and any consequences arising from this project or its usage are completely unrelated to the original authors.
 
 ---

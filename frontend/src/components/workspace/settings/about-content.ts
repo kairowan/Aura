@@ -6,7 +6,7 @@ export const aboutMarkdown = `# 💠 [About Aura 2.0](https://github.com/bytedan
 
 > **From Open Source, Back to Open Source**
 
-Aura (**D**eep **E**xploration and **E**fficient **R**esearch **Flow**) is an open-source **super agent harness** that orchestrates **sub-agents**, **memory**, and **sandboxes** to do almost anything — powered by **extensible skills**.
+Deer-Flow (**D**eep **E**xploration and **E**fficient **R**esearch **Flow**) is an open-source **super agent harness** that orchestrates **sub-agents**, **memory**, and **sandboxes** to do almost anything — powered by **extensible skills**.
 
 ---
 
@@ -22,7 +22,7 @@ Aura (**D**eep **E**xploration and **E**fficient **R**esearch **Flow**) is an op
 
 ## 🌟 GitHub Repository
 
-![Star History Chart](https://api.star-history.com/svg?repos=bytedance/aura&type=Date)
+![Star History Chart](https://api.star-history.com/svg?repos=bytedance/deer-flow&type=Date)
 
 Explore Aura on GitHub: [github.com/bytedance/deer-flow](https://github.com/bytedance/deer-flow)
 
