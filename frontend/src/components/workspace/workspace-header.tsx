@@ -37,12 +37,14 @@ export function WorkspaceHeader({ className }: { className?: string }) {
         ) : (
           <div className="flex items-center justify-between gap-2">
             {env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true" ? (
-              <Link href="/" className="text-primary ml-2 font-serif">
-                Aura
+              <Link href="/" className="text-primary ml-2 flex items-center gap-2 font-serif">
+                <span>💠</span>
+                <span>Aura</span>
               </Link>
             ) : (
-              <div className="text-primary ml-2 cursor-default font-serif">
-                Aura
+              <div className="text-primary ml-2 flex cursor-default items-center gap-2 font-serif">
+                <span>💠</span>
+                <span>Aura</span>
               </div>
             )}
             <SidebarTrigger />

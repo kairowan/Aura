@@ -13,6 +13,7 @@
   "build": {
     "appId": "com.aura.desktop",
     "productName": "Aura",
+    "icon": "icon.png",
     "directories": {
       "output": "dist"
     },
