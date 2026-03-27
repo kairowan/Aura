@@ -1,0 +1,34 @@
+{
+  "name": "aura-desktop",
+  "version": "1.0.0",
+  "description": "Desktop client for Aura AI Assistant",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.aura.desktop",
+    "productName": "Aura",
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": ["dmg"]
+    },
+    "win": {
+      "target": ["nsis"]
+    }
+  },
+  "dependencies": {
+    "wait-on": "^7.2.0"
+  },
+  "devDependencies": {
+    "electron": "^28.2.1",
+    "electron-builder": "^24.9.1"
+  }
+}

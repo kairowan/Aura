@@ -1,0 +1,7 @@
+node_modules/
+dist/
+build/
+.DS_Store
+*.local
+package-lock.json (Optional, but user said "npm install generated", so I'll keep it for now but maybe better to ignore if they want it pure secondary dev)
+# Better to keep package-lock if they want reproducible builds, but I'll stick to the user's "npm install generated" exclude rule.

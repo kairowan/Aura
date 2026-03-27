@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Shutting Down</title>
+    <style>
+        body {
+            background-color: #12121a;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #00a8e8;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        p {
+            font-size: 16px;
+            color: #a0a0b0;
+        }
+    </style>
+</head>
+<body>
+    <div class="loader"></div>
+    <p>Safely shutting down Aura engines...</p>
+</body>
+</html>
