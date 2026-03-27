@@ -98,7 +98,12 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadFile('loading.html');
+  // Use absolute path for loading.html to avoid issues in packaged apps
+  const loadingPath = path.join(__dirname, 'loading.html');
+  console.log('Loading splash screen from:', loadingPath);
+  mainWindow.loadFile(loadingPath).catch(err => {
+    console.error('Failed to load loading.html:', err);
+  });
 
   mainWindow.on('closed', function () {
     mainWindow = null;
@@ -171,7 +176,11 @@ async function startAuraNativeBackend() {
   const frontendDir = path.join(rootDir, 'frontend');
 
   updateLoadingStatus("正在初始化 Aura...", "正在准备极光工作区");
-  configureFrontendEnv(rootDir);
+  
+  // ONLY configure env in development (Resources is read-only in production)
+  if (!isPackaged) {
+    configureFrontendEnv(rootDir);
+  }
   
   // Optimization: Skip sync/install in production or if already present
   const venvExists = fs.existsSync(path.join(backendDir, '.venv'));
