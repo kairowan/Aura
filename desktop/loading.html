@@ -66,10 +66,11 @@
         }
 
         .icon {
-            font-size: 64px;
+            width: 80px;
+            height: 80px;
             z-index: 2;
             position: relative;
-            filter: drop-shadow(0 0 25px rgba(16, 185, 129, 0.4));
+            filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.4));
         }
 
         .aura-ring {
@@ -77,34 +78,49 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
-            border: 2px solid var(--primary);
+            border: 1px solid rgba(59, 130, 246, 0.3);
             opacity: 0;
-            animation: ring-pulse 3s infinite;
+            animation: ring-pulse 4s infinite cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .aura-ring-2 {
-            animation-delay: 1.5s;
+            border-color: rgba(139, 92, 246, 0.3);
+            animation-delay: 2s;
         }
 
         @keyframes ring-pulse {
-            0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0.8; }
-            100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
         }
 
         /* Typography */
         .title {
-            font-size: 28px;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--primary), var(--accent-blue), var(--accent-purple));
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6, #10b981);
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.04em;
             margin-bottom: 24px;
             animation: fade-in 1s ease-out 0.2s forwards;
             opacity: 0;
+        }
+
+        .log-container {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 10px;
+            color: rgba(0, 0, 0, 0.4);
+            text-align: center;
+            pointer-events: none;
         }
 
         .status {
@@ -162,12 +178,12 @@
         <div class="logo-wrapper">
             <div class="aura-ring"></div>
             <div class="aura-ring aura-ring-2"></div>
-            <div class="icon">💠</div>
+            <img src="./icon.png" class="icon" alt="Aura Logo">
         </div>
 
         <div class="title">Aura AI</div>
         
-        <p class="status">正在同步智能引擎与知识库...</p>
+        <p class="status">正在启动本地 Aura...</p>
         
         <div class="dots">
             <div class="dot"></div>
@@ -175,7 +191,9 @@
             <div class="dot"></div>
         </div>
 
-        <p class="sub-status">初次启动可能需要一分钟时间</p>
+        <p class="sub-status">正在准备极光工作区</p>
     </div>
+
+    <div class="log-container" id="log-info"></div>
 </body>
 </html>

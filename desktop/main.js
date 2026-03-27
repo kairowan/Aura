@@ -14,6 +14,48 @@ let processes = {
   langgraph: null
 };
 
+// Fix PATH for packaged apps on macOS to ensure common binary locations are included
+if (process.platform === 'darwin') {
+  const envPath = process.env.PATH || '';
+  const home = process.env.HOME || '';
+  const standardPaths = [
+    '/usr/local/bin',
+    '/usr/bin',
+    '/bin',
+    '/usr/sbin',
+    '/sbin',
+    '/opt/homebrew/bin',
+    '/opt/homebrew/sbin',
+    path.join(home, '.local', 'bin'),
+    path.join(home, '.pnpm-global', 'bin'),
+    path.join(home, 'Library', 'Application Support', 'pnpm')
+  ].join(':');
+  process.env.PATH = `${envPath}:${standardPaths}`;
+}
+
+// Function to send status updates to the loading screen
+function updateLoadingStatus(message, subMessage = '') {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.executeJavaScript(`
+      if (document.querySelector('.status')) {
+        document.querySelector('.status').innerText = ${JSON.stringify(message)};
+      }
+      if (document.querySelector('.sub-status')) {
+        document.querySelector('.sub-status').innerText = ${JSON.stringify(subMessage)};
+      }
+    `).catch(() => {});
+  }
+}
+
+// Get the root directory correctly whether in development or packaged
+const isPackaged = app.isPackaged;
+const rootDir = isPackaged 
+  ? process.resourcesPath 
+  : path.join(__dirname, '..');
+
+console.log('App is packaged:', isPackaged);
+console.log('Root Directory:', rootDir);
+
 // Ensure frontend env is configured to bypass NGINX via 127.0.0.1
 function configureFrontendEnv(rootDir) {
   const envPath = path.join(rootDir, 'frontend', '.env');
@@ -65,7 +107,6 @@ function createWindow() {
 
 function startSubProcess(name, cmd, args, cwd) {
   console.log(`[STARTING] ${name} in ${cwd}...`);
-  const rootDir = path.join(__dirname, '..');
   const backendDir = path.join(rootDir, 'backend');
   const isWindows = process.platform === 'win32';
   
@@ -126,24 +167,33 @@ async function runInitCommand(name, cmd, args, cwd) {
 }
 
 async function startAuraNativeBackend() {
-  const rootDir = path.join(__dirname, '..');
   const backendDir = path.join(rootDir, 'backend');
   const frontendDir = path.join(rootDir, 'frontend');
 
+  updateLoadingStatus("正在初始化 Aura...", "正在准备极光工作区");
   configureFrontendEnv(rootDir);
   
-  // Initialize environments first
-  try {
-    await runInitCommand("Backend Sync", "uv", ["sync"], backendDir);
-    await runInitCommand("Frontend Install", "pnpm", ["install"], frontendDir);
-  } catch (err) {
-    console.error("Initialization Failed:", err);
-    dialog.showErrorBox('Initialization Error', 'Failed to install Aura dependencies. Please ensure Python (uv) and Node.js are properly installed.');
-    app.quit();
-    return;
+  // Optimization: Skip sync/install in production or if already present
+  const venvExists = fs.existsSync(path.join(backendDir, '.venv'));
+  const modulesExist = fs.existsSync(path.join(frontendDir, 'node_modules'));
+
+  if (!isPackaged) {
+    try {
+      if (!venvExists) {
+        updateLoadingStatus("正在配置本地环境...", "初次运行需要一些时间");
+        await runInitCommand("Backend Sync", "uv", ["sync"], backendDir);
+      }
+      if (!modulesExist) {
+        updateLoadingStatus("正在准备前端组件...", "正在部署本地资源");
+        await runInitCommand("Frontend Install", "pnpm", ["install"], frontendDir);
+      }
+    } catch (err) {
+      console.error("Initialization Warning:", err);
+    }
   }
 
   // Multi-plex spawn the 3 core Aura services natively
+  updateLoadingStatus("正在加载核心动力...", "正在启动本地智能引擎");
   processes.gateway = startSubProcess(
     "Gateway", 
     "uv", 
@@ -165,29 +215,39 @@ async function startAuraNativeBackend() {
     frontendDir
   );
 
-  console.log('Waiting for Aura Next.js Frontend (port 3000) and API gateways to become ready...');
+  // Improved service waiting logic with specific status reporting
+  const services = [
+    { name: "智能大脑 (Port 8001)", url: "http-get://127.0.0.1:8001/health" },
+    { name: "逻辑引擎 (Port 2024)", url: "http-get://127.0.0.1:2024" },
+    { name: "工作区界面 (Port 3000)", url: "http-get://127.0.0.1:3000" }
+  ];
+
+  console.log('Waiting for Aura local services to become ready...');
   
-  try {
-    await waitOn({
-      resources: [
-        'http-get://127.0.0.1:3000',
-        'http-get://127.0.0.1:8001/health', 
-        'http-get://127.0.0.1:2024'
-      ],
-      delay: 2000,
-      interval: 2000,
-      timeout: 300000, // 5 minutes timeout (first uv run installation may take a while)
-      window: 1000
-    });
-    
-    console.log('Aura Native Services are ready! Loading UI...');
-    if (mainWindow) {
-      mainWindow.loadURL('http://127.0.0.1:3000/workspace');
+  for (const service of services) {
+    updateLoadingStatus(`正在加载${service.name}...`, "这通常需要几秒钟");
+    try {
+      await waitOn({
+        resources: [service.url],
+        delay: 500,
+        interval: 1000,
+        timeout: 60000, // 1 minute per service
+        window: 500
+      });
+    } catch (err) {
+      console.error(`Service ${service.name} failed to start:`, err);
+      updateLoadingStatus(`${service.name} 启动异常`, "请检查系统端口占用情况");
+      // Continue and try others, or show error?
     }
-  } catch (err) {
-    console.error('Failed to connect to Local Aura UI:', err);
-    dialog.showErrorBox('Startup Error', 'Aura took too long to start. Please check your system configuration.');
-    app.quit();
+  }
+  
+  updateLoadingStatus("加载完成", "正在进入工作区...");
+  
+  if (mainWindow) {
+    // Final wait check for frontend to be fully ready before navigation
+    setTimeout(() => {
+      mainWindow.loadURL('http://127.0.0.1:3000/workspace');
+    }, 1000);
   }
 }
 
