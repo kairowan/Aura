@@ -1,5 +1,7 @@
 # 💠 Aura (Based on Bytedance Aura)
 
+[English](README.md) | [简体中文](README_zh.md) | [日本語](README_ja.md) | [Français](README_fr.md) | [Русский](README_ru.md)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 ---
@@ -35,12 +37,12 @@ While the original Aura is incredibly powerful, its deployment process is heavil
 
 **🍎 macOS / 🐧 Linux Terminal:**
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/YOUR_ACCOUNT/YOUR_REPO/main/install.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/kairowan/Aura/main/install.sh)"
 ```
 
 **🪟 Windows PowerShell:**
 ```powershell
-iwr -useb https://raw.githubusercontent.com/YOUR_ACCOUNT/YOUR_REPO/main/install.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/kairowan/Aura/main/install.ps1 | iex
 ```
 
 ### Option 2: Build Desktop Client

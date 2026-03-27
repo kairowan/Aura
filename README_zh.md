@@ -1,5 +1,7 @@
 # 💠 Aura (基于字节跳动 Aura 二开版)
 
+[English](README.md) | [简体中文](README_zh.md) | [日本語](README_ja.md) | [Français](README_fr.md) | [Русский](README_ru.md)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 ---
@@ -35,12 +37,12 @@
 
 **🍎 macOS / 🐧 Linux 用户终端一行执行：**
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/你的账号/你的仓库/main/install.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/kairowan/Aura/main/install.sh)"
 ```
 
 **🪟 Windows 用户 PowerShell 一行执行：**
 ```powershell
-iwr -useb https://raw.githubusercontent.com/你的账号/你的仓库/main/install.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/kairowan/Aura/main/install.ps1 | iex
 ```
 
 ### 方式二：下载独立桌面版客户端
