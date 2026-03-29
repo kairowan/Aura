@@ -5,6 +5,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+
 jobs:
   build-macos:
     name: Build macOS
@@ -226,6 +229,7 @@ jobs:
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-24.04
+    if: always()
     needs:
       - build-macos
       - build-windows
@@ -239,6 +243,8 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
+          pattern: "*-release"
+          merge-multiple: true
           path: release-assets
 
       - name: Resolve release notes
@@ -254,6 +260,7 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
+          name: Aura ${{ github.ref_name }}
           body_path: ${{ steps.notes.outputs.path }}
           draft: false
           prerelease: false
