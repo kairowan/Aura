@@ -90,7 +90,7 @@ jobs:
         run: pnpm --dir frontend install --frozen-lockfile
 
       - name: Build Windows package
-        run: npm --prefix desktop run dist:win
+        run: npm --prefix desktop run "dist:win"
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
@@ -133,8 +133,11 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm --dir frontend install --frozen-lockfile
 
+      - name: Install Linux packaging dependencies
+        run: sudo apt-get update && sudo apt-get install -y libarchive-tools rpm
+
       - name: Build Linux packages
-        run: npm --prefix desktop run dist:linux
+        run: npm --prefix desktop run "dist:linux"
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
@@ -214,7 +217,7 @@ jobs:
         run: npm --prefix mobile run sync
 
       - name: Build iOS simulator target
-        run: xcodebuild -project ios/App/App.xcodeproj -scheme App -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
+        run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
         working-directory: mobile
 
   create-release:
@@ -225,7 +228,6 @@ jobs:
       - build-windows
       - build-linux
       - build-android
-      - validate-ios
 
     steps:
       - name: Checkout

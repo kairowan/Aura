@@ -42,6 +42,14 @@ function mergeEnvFile(targetEnv, envPath) {
   });
 }
 
+function runBuildCommand(command, env) {
+  return spawnSync(command, ['build:desktop'], {
+    cwd: frontendDir,
+    env,
+    stdio: 'inherit',
+  });
+}
+
 function buildFrontend() {
   const env = { ...process.env };
   mergeEnvFile(env, preparedEnvPath);
@@ -54,12 +62,20 @@ function buildFrontend() {
   env.NEXT_PUBLIC_LANGGRAPH_BASE_URL =
     env.NEXT_PUBLIC_LANGGRAPH_BASE_URL || 'http://127.0.0.1:2024';
 
-  const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
-  const result = spawnSync(pnpmCommand, ['build:desktop'], {
-    cwd: frontendDir,
-    env,
-    stdio: 'inherit',
-  });
+  const candidates = process.platform === 'win32' ? ['pnpm.cmd', 'pnpm'] : ['pnpm'];
+  let result = null;
+
+  for (const command of candidates) {
+    const attempt = runBuildCommand(command, env);
+    if (!attempt.error || attempt.error.code !== 'ENOENT') {
+      result = attempt;
+      break;
+    }
+  }
+
+  if (!result) {
+    throw new Error('Unable to locate pnpm to build the frontend.');
+  }
 
   if (result.error) {
     throw result.error;

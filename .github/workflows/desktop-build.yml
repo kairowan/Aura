@@ -25,15 +25,15 @@ jobs:
         include:
           - label: macOS Desktop
             os: macos-14
-            build_command: npm --prefix desktop run dist:mac
+            build_command: npm run dist:mac
             artifact_glob: desktop/dist/*.dmg
           - label: Windows Desktop
             os: windows-2022
-            build_command: npm --prefix desktop run dist:win
+            build_command: npm run dist:win
             artifact_glob: desktop/dist/*.exe
           - label: Linux Desktop
             os: ubuntu-24.04
-            build_command: npm --prefix desktop run dist:linux
+            build_command: npm run dist:linux
             artifact_glob: |
               desktop/dist/*.AppImage
               desktop/dist/*.deb
@@ -72,8 +72,13 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install tesseract
 
+      - name: Install Linux packaging dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libarchive-tools rpm
+
       - name: Build desktop artifact
         run: ${{ matrix.build_command }}
+        working-directory: desktop
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
