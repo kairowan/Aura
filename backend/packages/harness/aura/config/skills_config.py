@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from pydantic import BaseModel, Field
@@ -22,6 +23,10 @@ class SkillsConfig(BaseModel):
         Returns:
             Path to the skills directory
         """
+        env_path = os.getenv("AURA_SKILLS_PATH")
+        if env_path:
+            return Path(env_path).expanduser().resolve()
+
         if self.path:
             # Use configured path (can be absolute or relative)
             path = Path(self.path)

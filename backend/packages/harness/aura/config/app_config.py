@@ -22,10 +22,73 @@ from aura.config.title_config import load_title_config_from_dict
 from aura.config.token_usage_config import TokenUsageConfig
 from aura.config.tool_config import ToolConfig, ToolGroupConfig
 from aura.config.tool_search_config import ToolSearchConfig, load_tool_search_config_from_dict
+from aura.config.paths import get_paths
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+
+def _merge_mapping_layers(base: Any, overlay: Any) -> Any:
+    """Recursively merge two mapping-like objects, preferring overlay values."""
+    if isinstance(base, dict) and isinstance(overlay, dict):
+        merged = dict(base)
+        for key, value in overlay.items():
+            merged[key] = _merge_mapping_layers(merged.get(key), value)
+        return merged
+    return overlay if overlay is not None else base
+
+
+def resolve_channels_config_path() -> Path:
+    """Resolve the runtime channels config override path."""
+    env_path = os.getenv("AURA_CHANNELS_CONFIG_PATH")
+    if env_path:
+        return Path(env_path).expanduser()
+    return get_paths().base_dir / "channels" / "config.json"
+
+
+def load_channels_config_overlay() -> dict[str, Any]:
+    """Load runtime channel overrides from disk."""
+    config_path = resolve_channels_config_path()
+    if not config_path.exists():
+        return {}
+
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception as e:
+        logger.error("Failed to load runtime channels config: %s", e)
+        return {}
+
+
+def save_channels_config_overlay(config: dict[str, Any]) -> Path:
+    """Persist runtime channel overrides to disk."""
+    config_path = resolve_channels_config_path()
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
+    return config_path
+
+
+def build_custom_provider_model_data(custom_config: dict[str, Any]) -> dict[str, Any] | None:
+    """Build a transient model config from provider settings saved by the UI."""
+    api_key = custom_config.get("api_key")
+    base_url = custom_config.get("base_url")
+
+    if not api_key or not base_url:
+        return None
+
+    return {
+        "name": "custom-provider",
+        "display_name": custom_config.get("display_name") or "Custom AI",
+        "use": "langchain_openai:ChatOpenAI",
+        "model": custom_config.get("model_id") or "gpt-4o",
+        "base_url": base_url,
+        "api_key": api_key,
+        "supports_thinking": True,
+        "supports_vision": True,
+    }
 
 
 class AppConfig(BaseModel):
@@ -129,28 +192,30 @@ class AppConfig(BaseModel):
         config_data["extensions"] = extensions_config.model_dump()
 
         # Load custom provider config if present
-        custom_provider_path = resolved_path.parent / ".aura" / "provider_config.json"
+        provider_env_path = os.getenv("AURA_PROVIDER_CONFIG_PATH")
+        if provider_env_path:
+            custom_provider_path = Path(provider_env_path).expanduser()
+        else:
+            custom_provider_path = resolved_path.parent / ".aura" / "provider_config.json"
         if custom_provider_path.exists():
             try:
                 with open(custom_provider_path, "r", encoding="utf-8") as f:
                     custom_config = json.load(f)
-                    if custom_config.get("api_key") and custom_config.get("base_url"):
-                        custom_model = {
-                            "name": "custom-provider",
-                            "display_name": custom_config.get("display_name") or "Custom AI",
-                            "use": "langchain_openai:ChatOpenAI",
-                            "model": custom_config.get("model_id") or "gpt-4o",
-                            "api_base": custom_config.get("base_url"),
-                            "api_key": custom_config.get("api_key"),
-                            "supports_thinking": True,
-                            "supports_vision": True,
-                        }
+                    custom_model = build_custom_provider_model_data(custom_config)
+                    if custom_model:
                         # Prepend to models list so it becomes the default
                         if "models" not in config_data:
                             config_data["models"] = []
                         config_data["models"] = [custom_model] + config_data["models"]
             except Exception as e:
                 logger.error(f"Failed to load custom provider config: {e}")
+
+        channels_overlay = load_channels_config_overlay()
+        if channels_overlay:
+            config_data["channels"] = _merge_mapping_layers(
+                config_data.get("channels", {}),
+                channels_overlay,
+            )
 
         result = cls.model_validate(config_data)
         return result

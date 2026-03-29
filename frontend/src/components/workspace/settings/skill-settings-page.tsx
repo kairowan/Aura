@@ -1,6 +1,6 @@
 "use client";
 
-import { SparklesIcon } from "lucide-react";
+import { SearchIcon, SparklesIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -13,6 +13,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Input } from "@/components/ui/input";
 import {
   Item,
   ItemActions,
@@ -58,25 +59,44 @@ function SkillSettingsList({
   const { t } = useI18n();
   const router = useRouter();
   const [filter, setFilter] = useState<string>("public");
+  const [query, setQuery] = useState("");
   const { mutate: enableSkill } = useEnableSkill();
-  const filteredSkills = useMemo(
-    () => skills.filter((skill) => skill.category === filter),
-    [skills, filter],
-  );
+  const filteredSkills = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return skills.filter((skill) => {
+      if (skill.category !== filter) {
+        return false;
+      }
+      if (!normalizedQuery) {
+        return true;
+      }
+      const haystack = [skill.name, skill.description].join(" ").toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [skills, filter, query]);
   const handleCreateSkill = () => {
     onClose?.();
     router.push("/workspace/chats/new?mode=skill");
   };
   return (
     <div className="flex w-full flex-col gap-4">
-      <header className="flex justify-between">
-        <div className="flex gap-2">
+      <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Tabs defaultValue="public" onValueChange={setFilter}>
             <TabsList variant="line">
               <TabsTrigger value="public">{t.common.public}</TabsTrigger>
               <TabsTrigger value="custom">{t.common.custom}</TabsTrigger>
             </TabsList>
           </Tabs>
+          <div className="relative w-full sm:w-72">
+            <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t.settings.skills.searchPlaceholder}
+              className="pl-9"
+            />
+          </div>
         </div>
         <div>
           <Button size="sm" onClick={handleCreateSkill}>
@@ -85,7 +105,12 @@ function SkillSettingsList({
           </Button>
         </div>
       </header>
-      {filteredSkills.length === 0 && (
+      {filteredSkills.length === 0 && query.trim() && (
+        <div className="text-muted-foreground rounded-lg border border-dashed px-4 py-6 text-sm">
+          {t.settings.skills.emptySearch}
+        </div>
+      )}
+      {filteredSkills.length === 0 && !query.trim() && (
         <EmptySkill onCreateSkill={handleCreateSkill} />
       )}
       {filteredSkills.length > 0 &&

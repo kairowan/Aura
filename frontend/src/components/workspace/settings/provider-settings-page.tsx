@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { CloudIcon, SaveIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -20,7 +21,9 @@ interface ProviderConfig {
 
 export function ProviderSettingsPage() {
   const { t } = useI18n();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
+  const [validating, setValidating] = useState(false);
   const [config, setConfig] = useState<ProviderConfig>({
     base_url: "",
     api_key: "",
@@ -60,6 +63,7 @@ export function ProviderSettingsPage() {
       });
 
       if (response.ok) {
+        await queryClient.invalidateQueries({ queryKey: ["models"] });
         toast.success(t.settings.provider.saveSuccess);
       } else {
         toast.error(t.settings.provider.saveError);
@@ -72,8 +76,33 @@ export function ProviderSettingsPage() {
     }
   };
 
+  const handleValidate = async () => {
+    setValidating(true);
+    try {
+      const response = await fetch(`${getBackendBaseURL()}/api/provider/validate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(config),
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(data.message ?? t.settings.provider.validateSuccess);
+      } else {
+        toast.error(data.detail ?? t.settings.provider.validateError);
+      }
+    } catch (error) {
+      console.error("Failed to validate provider config:", error);
+      toast.error(t.settings.provider.validateError);
+    } finally {
+      setValidating(false);
+    }
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-2">
       <SettingsSection
         title={t.settings.provider.title}
         description={t.settings.provider.description}
@@ -130,11 +159,21 @@ export function ProviderSettingsPage() {
             />
           </div>
 
-          <div className="flex justify-end pt-4">
+          <div className="sticky bottom-0 z-10 -mx-5 mt-2 flex justify-end gap-3 border-t bg-background/95 px-5 pt-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.5rem)] backdrop-blur md:-mx-6 md:px-6">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={validating}
+              onClick={handleValidate}
+              className="min-w-32"
+            >
+              <CloudIcon className="mr-2 size-4" />
+              {t.settings.provider.validateButton}
+            </Button>
             <Button
               disabled={loading}
               onClick={handleSave}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all hover:scale-105"
+              className="min-w-32 bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all hover:scale-105 hover:bg-emerald-600"
             >
               <SaveIcon className="mr-2 size-4" />
               {t.common.save}

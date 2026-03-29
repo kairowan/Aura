@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "demo:save": "node scripts/save-demo.js",
-    "build": "next build",
+    "build": "next build --webpack",
+    "build:desktop": "next build --webpack",
     "check": "eslint . --ext .ts,.tsx && tsc --noEmit",
     "dev": "next dev --turbo",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "preview": "next build && next start",
+    "preview": "pnpm build && next start",
     "start": "next start",
     "typecheck": "tsc --noEmit"
   },
@@ -71,6 +72,7 @@
     "ogl": "^1.0.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-drawio": "^1.0.7",
     "react-resizable-panels": "^4.4.1",
     "rehype-katex": "^7.0.1",
     "rehype-raw": "^7.0.0",

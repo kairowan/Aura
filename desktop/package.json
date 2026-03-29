@@ -4,11 +4,15 @@
   "description": "Desktop client for Aura AI Assistant",
   "main": "main.js",
   "scripts": {
+    "prepare:resources": "node scripts/prepare-desktop-resources.js",
+    "build:ocr-runtime": "node scripts/vendor-tesseract-runtime.js",
+    "build:frontend": "node scripts/build-frontend.js",
     "start": "electron .",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder",
-    "dist:mac": "electron-builder --mac",
-    "dist:win": "electron-builder --win"
+    "pack": "npm run prepare:resources && npm run build:ocr-runtime && npm run build:frontend && electron-builder --dir",
+    "dist": "npm run prepare:resources && npm run build:ocr-runtime && npm run build:frontend && electron-builder",
+    "dist:linux": "npm run prepare:resources && npm run build:frontend && electron-builder --linux",
+    "dist:mac": "npm run prepare:resources && npm run build:ocr-runtime && npm run build:frontend && electron-builder --mac",
+    "dist:win": "npm run prepare:resources && npm run build:frontend && electron-builder --win"
   },
   "build": {
     "appId": "com.aura.desktop",
@@ -25,28 +29,68 @@
           "!**/.venv",
           "!**/__pycache__",
           "!**/.aura",
-          "!**/.langgraph"
+          "!**/.langgraph",
+          "!**/.pytest_cache",
+          "!**/tests",
+          "!**/docs"
         ]
       },
       {
-        "from": "../frontend",
-        "to": "frontend",
-        "filter": [
-          "!**/.next",
-          "!**/node_modules"
-        ]
+        "from": "../frontend/.next/standalone",
+        "to": "frontend-runtime"
       },
-      "../config.yaml",
-      "../.env"
+      {
+        "from": "../frontend/.next/static",
+        "to": "frontend-runtime/.next/static"
+      },
+      {
+        "from": "../frontend/public",
+        "to": "frontend-runtime/public"
+      },
+      {
+        "from": "vendor/build-resources/frontend.env",
+        "to": "frontend-runtime/.env"
+      },
+      {
+        "from": "../agents",
+        "to": "seed-data/agents"
+      },
+      {
+        "from": "../skills",
+        "to": "seed-data/skills"
+      },
+      {
+        "from": "vendor/build-resources/extensions_config.json",
+        "to": "seed-data/extensions_config.json"
+      },
+      {
+        "from": "vendor/build-resources/config.yaml",
+        "to": "config.yaml"
+      },
+      {
+        "from": "vendor/build-resources/root.env",
+        "to": ".env"
+      }
     ],
     "mac": {
       "category": "public.app-category.productivity",
       "target": ["dmg"],
-      "icon": "build/icon.icns"
+      "icon": "build/icon.icns",
+      "extraResources": [
+        {
+          "from": "vendor/tesseract-runtime",
+          "to": "ocr-runtime"
+        }
+      ]
     },
     "win": {
       "target": ["nsis"],
       "icon": "icon.png"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Utility",
+      "icon": "build"
     }
   },
   "dependencies": {

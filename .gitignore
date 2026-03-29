@@ -47,6 +47,8 @@ log/
 # pnpm
 .pnpm-store
 sandbox_image_cache.tar
+desktop/vendor/
+desktop/vendor-cache/
 
 # ignore the legacy `web` folder
 web/

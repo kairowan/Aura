@@ -9,6 +9,7 @@ from app.gateway.config import get_gateway_config
 from app.gateway.routers import (
     agents,
     artifacts,
+    automations,
     channels,
     mcp,
     memory,
@@ -60,6 +61,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception:
         logger.exception("No IM channels configured or channel service failed to start")
 
+    try:
+        from app.automation.service import start_automation_service
+
+        automation_service = await start_automation_service()
+        logger.info("Automation service started with %d job(s)", len(automation_service.list_jobs()))
+    except Exception:
+        logger.exception("Automation service failed to start")
+
     yield
 
     # Stop channel service on shutdown
@@ -69,6 +78,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await stop_channel_service()
     except Exception:
         logger.exception("Failed to stop channel service")
+    try:
+        from app.automation.service import stop_automation_service
+
+        await stop_automation_service()
+    except Exception:
+        logger.exception("Failed to stop automation service")
     logger.info("Shutting down API Gateway")
 
 
@@ -147,6 +162,10 @@ This gateway provides custom endpoints for models, MCP configuration, skills, an
                 "description": "Manage IM channel integrations (Feishu, Slack, Telegram)",
             },
             {
+                "name": "automations",
+                "description": "Create and manage scheduled automation jobs",
+            },
+            {
                 "name": "health",
                 "description": "Health check and system status endpoints",
             },
@@ -196,6 +215,9 @@ This gateway provides custom endpoints for models, MCP configuration, skills, an
 
     # Channels API is mounted at /api/channels
     app.include_router(channels.router)
+
+    # Automation API is mounted at /api/automations
+    app.include_router(automations.router)
 
     @app.get("/health", tags=["health"])
     async def health_check() -> dict:

@@ -23,9 +23,20 @@
 
 **本项目的核心目标**是将这套极其强大的 Agent 引擎**彻底民用化、产品化**：
 
-1. **💻 真正的桌面级客户端化**：打破原有浏览器的限制，提供独立的 Windows (`.exe`) 和 macOS (`.dmg`) 桌面原生客户端。
+1. **💻 真正的桌面级客户端化**：打破原有浏览器的限制，提供独立的 Windows (`.exe`)、macOS (`.dmg`) 和 Linux 桌面安装包。
 2. **⚡ 一行命令/一键极简安装**：彻底抛弃繁琐的 `make dev`、环境配置等极客操作，实现开箱即用的自动化部署体验。
 3. **🔋 彻底的性能调优**：预置了强制进入生产模式的策略，禁用了占用 CPU 和几 GB 内存的开发态热更新，即使在普通的个人笔记本上也能如丝般顺滑运行。
+
+---
+
+## 📊 当前版本能力概览
+
+- 智能体：130 个
+- 公共技能：218 个
+- MCP 工具服务配置：129 个
+- 内置核心工具：22 个
+
+首个正式版本的完整功能与发版说明见 [`docs/releases/1.0.0.md`](./docs/releases/1.0.0.md)。
 
 ---
 
@@ -49,6 +60,11 @@ iwr -useb https://raw.githubusercontent.com/kairowan/Aura/main/install.ps1 | iex
 您可以在本仓库右侧的 **[Releases](#)** 页面，直接下载最新版本的客户端安装包（即装即用）：
 - `Aura-macOS.dmg`
 - `Aura-Windows.exe`
+- `Aura-Linux.AppImage / .deb`
+
+### 方式三：构建移动端外壳
+
+仓库中新增了 [`/mobile`](./mobile) 目录，用于生成 Android / iOS 的 Capacitor 外壳。它连接的是已部署的 Aura Web 工作台，而不是在手机里内置桌面端那套本地运行时。
 
 ---
 
@@ -65,6 +81,7 @@ iwr -useb https://raw.githubusercontent.com/kairowan/Aura/main/install.ps1 | iex
 为了防止手动启动出现错误，我们内置了极简化的启动脚本：
 - **Mac 环境**：双击项目根目录下的 `start_optimized.command` 即可一键低占用启动服务。
 - 修改大模型 API 依然在 `config.yaml` 或 `.env` 中进行。
+- **移动端外壳**：查看 [`/mobile/README.md`](./mobile/README.md) 获取 Android / iOS 接入步骤。
 
 ---
 

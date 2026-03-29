@@ -39,7 +39,7 @@ models:
   #   display_name: Doubao-Seed-1.8
   #   use: aura.models.patched_deepseek:PatchedChatDeepSeek
   #   model: doubao-seed-1-8-251228
-  #   api_base: https://ark.cn-beijing.volces.com/api/v3
+  #   base_url: https://ark.cn-beijing.volces.com/api/v3
   #   api_key: $VOLCENGINE_API_KEY
   #   supports_thinking: true
   #   supports_vision: true
@@ -128,7 +128,7 @@ models:
   #   display_name: Kimi K2.5
   #   use: aura.models.patched_deepseek:PatchedChatDeepSeek
   #   model: kimi-k2.5
-  #   api_base: https://api.moonshot.cn/v1
+  #   base_url: https://api.moonshot.cn/v1
   #   api_key: $MOONSHOT_API_KEY
   #   max_tokens: 32768
   #   supports_thinking: true

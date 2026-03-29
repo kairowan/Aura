@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <title>Aura Mobile</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="shell-bg"></div>
+    <main class="app-shell">
+      <section class="hero-card">
+        <div class="hero-copy">
+          <p class="eyebrow">Aura Mobile</p>
+          <h1>Connect your deployed Aura workspace.</h1>
+          <p class="description">
+            Use this shell to access Aura from Android or iPhone without carrying
+            the local desktop runtime onto the device.
+          </p>
+        </div>
+
+        <section class="saved-workspaces">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Recent Servers</p>
+              <p class="section-copy">Keep a few Aura endpoints ready for quick switching.</p>
+            </div>
+            <button type="button" id="clear-history" class="ghost-button ghost-button--compact">
+              Clear List
+            </button>
+          </div>
+          <div id="workspace-history" class="history-list empty-state">
+            No saved servers yet.
+          </div>
+        </section>
+
+        <form id="config-form" class="config-form">
+          <label for="server-url">Aura URL</label>
+          <input
+            id="server-url"
+            name="serverUrl"
+            type="url"
+            placeholder="https://aura.example.com/workspace"
+            autocapitalize="off"
+            autocomplete="url"
+            spellcheck="false"
+          />
+          <div class="button-row">
+            <button type="submit" class="primary-button">Connect</button>
+            <button type="button" id="clear-url" class="ghost-button">Reset</button>
+          </div>
+          <p id="config-hint" class="hint">
+            If you enter only the host root, the shell will automatically open
+            <code>/workspace</code>.
+          </p>
+        </form>
+      </section>
+
+      <section id="workspace-panel" class="workspace-panel hidden">
+        <div class="workspace-toolbar">
+          <div>
+            <p class="toolbar-label">Connected Workspace</p>
+            <p id="connected-url" class="toolbar-url"></p>
+            <p id="workspace-status" class="workspace-status">Idle</p>
+          </div>
+          <div class="button-row">
+            <button type="button" id="reload-workspace" class="ghost-button">Reload</button>
+            <button type="button" id="edit-url" class="ghost-button">Change URL</button>
+          </div>
+        </div>
+        <div class="workspace-frame-shell">
+          <div id="workspace-loading" class="workspace-loading hidden">
+            <div class="loading-spinner"></div>
+            <p>Loading Aura workspace…</p>
+          </div>
+          <iframe
+            id="workspace-frame"
+            title="Aura Workspace"
+            referrerpolicy="no-referrer"
+            allow="clipboard-read; clipboard-write"
+          ></iframe>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

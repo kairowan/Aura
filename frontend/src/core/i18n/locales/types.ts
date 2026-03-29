@@ -116,6 +116,9 @@ export interface Translations {
     title: string;
     description: string;
     newAgent: string;
+    searchPlaceholder: string;
+    searchEmptyTitle: string;
+    searchEmptyDescription: string;
     emptyTitle: string;
     emptyDescription: string;
     chat: string;
@@ -242,6 +245,8 @@ export interface Translations {
       notification: string;
       about: string;
       aiProvider: string;
+      channels: string;
+      automation: string;
     };
     memory: {
       title: string;
@@ -292,11 +297,15 @@ export interface Translations {
     tools: {
       title: string;
       description: string;
+      searchPlaceholder: string;
+      emptySearch: string;
     };
     skills: {
       title: string;
       description: string;
       createSkill: string;
+      searchPlaceholder: string;
+      emptySearch: string;
       emptyTitle: string;
       emptyDescription: string;
       emptyButton: string;
@@ -312,6 +321,105 @@ export interface Translations {
       notSupported: string;
       disableNotification: string;
     };
+    channels: {
+      title: string;
+      description: string;
+      loadError: string;
+      saveSuccess: string;
+      saveError: string;
+      restartSuccess: string;
+      restartError: string;
+      serviceStatusLabel: string;
+      serviceStatusDescription: string;
+      serviceRunning: string;
+      serviceStopped: string;
+      defaultAssistantLabel: string;
+      defaultAssistantPlaceholder: string;
+      assistantLabel: string;
+      assistantPlaceholder: string;
+      allowedUsersLabel: string;
+      allowedUsersPlaceholder: string;
+      running: string;
+      notRunning: string;
+      disabled: string;
+      restartButton: string;
+      providers: {
+        feishu: {
+          title: string;
+          description: string;
+          appIdLabel: string;
+          appIdPlaceholder: string;
+          appSecretLabel: string;
+          appSecretPlaceholder: string;
+        };
+        slack: {
+          title: string;
+          description: string;
+          botTokenLabel: string;
+          botTokenPlaceholder: string;
+          appTokenLabel: string;
+          appTokenPlaceholder: string;
+        };
+        telegram: {
+          title: string;
+          description: string;
+          botTokenLabel: string;
+          botTokenPlaceholder: string;
+        };
+      };
+    };
+    automation: {
+      title: string;
+      description: string;
+      loadError: string;
+      validationError: string;
+      createTitle: string;
+      createDescription: string;
+      nameLabel: string;
+      namePlaceholder: string;
+      promptLabel: string;
+      promptPlaceholder: string;
+      assistantLabel: string;
+      assistantPlaceholder: string;
+      scheduleTypeLabel: string;
+      scheduleInterval: string;
+      scheduleDaily: string;
+      intervalLabel: string;
+      dailyTimeLabel: string;
+      deliveryChannelLabel: string;
+      deliveryChatIdLabel: string;
+      deliveryChatIdPlaceholder: string;
+      deliveryNone: string;
+      enabledLabel: string;
+      enabledDescription: string;
+      createButton: string;
+      createSuccess: string;
+      createError: string;
+      updateError: string;
+      runNowButton: string;
+      runSuccess: string;
+      runError: string;
+      deleteSuccess: string;
+      deleteError: string;
+      enableSuccess: string;
+      disableSuccess: string;
+      listTitle: string;
+      empty: string;
+      scheduleLabel: string;
+      nextRunLabel: string;
+      lastRunLabel: string;
+      deliveryLabel: string;
+      lastErrorLabel: string;
+      lastOutputLabel: string;
+      notScheduled: string;
+      intervalSummary: string;
+      dailySummary: string;
+      statusIdle: string;
+      statusRunning: string;
+      statusSuccess: string;
+      statusError: string;
+      disabled: string;
+    };
     provider: {
       title: string;
       description: string;
@@ -323,6 +431,9 @@ export interface Translations {
       modelIdPlaceholder: string;
       displayNameLabel: string;
       displayNamePlaceholder: string;
+      validateButton: string;
+      validateSuccess: string;
+      validateError: string;
       saveSuccess: string;
       saveError: string;
     };

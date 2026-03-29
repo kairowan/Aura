@@ -8,6 +8,8 @@ import {
   SparklesIcon,
   WrenchIcon,
   CloudIcon,
+  BotIcon,
+  MessagesSquare,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -19,7 +21,9 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AboutSettingsPage } from "@/components/workspace/settings/about-settings-page";
+import { AutomationSettingsPage } from "@/components/workspace/settings/automation-settings-page";
 import { AppearanceSettingsPage } from "@/components/workspace/settings/appearance-settings-page";
+import { ChannelSettingsPage } from "@/components/workspace/settings/channel-settings-page";
 import { MemorySettingsPage } from "@/components/workspace/settings/memory-settings-page";
 import { NotificationSettingsPage } from "@/components/workspace/settings/notification-settings-page";
 import { SkillSettingsPage } from "@/components/workspace/settings/skill-settings-page";
@@ -28,13 +32,15 @@ import { ProviderSettingsPage } from "@/components/workspace/settings/provider-s
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
 
-type SettingsSection =
+export type SettingsSection =
   | "appearance"
   | "memory"
   | "tools"
   | "skills"
   | "notification"
   | "aiProvider"
+  | "channels"
+  | "automation"
   | "about";
 
 type SettingsDialogProps = React.ComponentProps<typeof Dialog> & {
@@ -74,6 +80,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
       },
       { id: "tools", label: t.settings.sections.tools, icon: WrenchIcon },
       { id: "aiProvider", label: t.settings.sections.aiProvider, icon: CloudIcon },
+      { id: "channels", label: t.settings.sections.channels, icon: MessagesSquare },
+      { id: "automation", label: t.settings.sections.automation, icon: BotIcon },
       { id: "skills", label: t.settings.sections.skills, icon: SparklesIcon },
       { id: "about", label: t.settings.sections.about, icon: InfoIcon },
     ],
@@ -83,6 +91,9 @@ export function SettingsDialog(props: SettingsDialogProps) {
       t.settings.sections.tools,
       t.settings.sections.skills,
       t.settings.sections.notification,
+      t.settings.sections.aiProvider,
+      t.settings.sections.channels,
+      t.settings.sections.automation,
       t.settings.sections.about,
     ],
   );
@@ -92,7 +103,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
       onOpenChange={(open) => props.onOpenChange?.(open)}
     >
       <DialogContent
-        className="flex h-[75vh] max-h-[calc(100vh-2rem)] flex-col sm:max-w-5xl md:max-w-6xl"
+        className="top-[48%] flex h-[min(78vh,860px)] max-h-[calc(100vh-3rem)] flex-col overflow-hidden p-4 sm:top-[50%] sm:max-w-5xl sm:p-5 md:max-w-6xl md:p-6"
         aria-describedby={undefined}
       >
         <DialogHeader className="gap-1">
@@ -101,8 +112,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
             {t.settings.description}
           </p>
         </DialogHeader>
-        <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[220px_1fr]">
-          <nav className="bg-sidebar min-h-0 overflow-y-auto rounded-lg border p-2">
+        <div className="grid min-h-0 flex-1 gap-3 md:grid-cols-[240px_minmax(0,1fr)]">
+          <nav className="bg-sidebar min-h-0 overflow-y-auto rounded-xl border p-2 max-md:max-h-48">
             <ul className="space-y-1 pr-1">
               {sections.map(({ id, label, icon: Icon }) => {
                 const active = activeSection === id;
@@ -126,8 +137,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
               })}
             </ul>
           </nav>
-          <ScrollArea className="h-full min-h-0 rounded-lg border">
-            <div className="space-y-8 p-6">
+          <ScrollArea className="h-full min-h-0 rounded-xl border bg-background/70">
+            <div className="space-y-8 p-5 pb-10 md:p-6 md:pb-12">
               {activeSection === "appearance" && <AppearanceSettingsPage />}
               {activeSection === "memory" && <MemorySettingsPage />}
               {activeSection === "tools" && <ToolSettingsPage />}
@@ -138,6 +149,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
               )}
               {activeSection === "notification" && <NotificationSettingsPage />}
               {activeSection === "aiProvider" && <ProviderSettingsPage />}
+              {activeSection === "channels" && <ChannelSettingsPage />}
+              {activeSection === "automation" && <AutomationSettingsPage />}
               {activeSection === "about" && <AboutSettingsPage />}
             </div>
           </ScrollArea>

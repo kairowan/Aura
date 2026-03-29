@@ -108,6 +108,20 @@ class ChannelService:
 
         return await self._start_channel(name, config)
 
+    async def reload_from_app_config(self) -> None:
+        """Reload channel config from the latest AppConfig and restart service state."""
+        await self.stop()
+
+        refreshed = self.from_app_config()
+        self.bus = refreshed.bus
+        self.store = refreshed.store
+        self.manager = refreshed.manager
+        self._channels = refreshed._channels
+        self._config = refreshed._config
+        self._running = refreshed._running
+
+        await self.start()
+
     async def _start_channel(self, name: str, config: dict[str, Any]) -> bool:
         """Instantiate and start a single channel."""
         import_path = _CHANNEL_REGISTRY.get(name)

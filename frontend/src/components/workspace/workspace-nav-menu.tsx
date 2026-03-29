@@ -3,6 +3,7 @@
 import {
   BugIcon,
   ChevronsUpDown,
+  CloudIcon,
   GlobeIcon,
   InfoIcon,
   MailIcon,
@@ -28,7 +29,7 @@ import {
 import { useI18n } from "@/core/i18n/hooks";
 
 import { GithubIcon } from "./github-icon";
-import { SettingsDialog } from "./settings";
+import { SettingsDialog, type SettingsSection } from "./settings";
 
 function NavMenuButtonContent({
   isSidebarOpen,
@@ -50,11 +51,31 @@ function NavMenuButtonContent({
   );
 }
 
+function NavQuickActionContent({
+  isSidebarOpen,
+  icon: Icon,
+  label,
+}: {
+  isSidebarOpen: boolean;
+  icon: typeof CloudIcon;
+  label: string;
+}) {
+  return isSidebarOpen ? (
+    <>
+      <Icon className="size-4" />
+      <span>{label}</span>
+    </>
+  ) : (
+    <div className="flex size-full items-center justify-center">
+      <Icon className="size-4" />
+    </div>
+  );
+}
+
 export function WorkspaceNavMenu() {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsDefaultSection, setSettingsDefaultSection] = useState<
-    "appearance" | "memory" | "tools" | "skills" | "notification" | "about"
-  >("appearance");
+  const [settingsDefaultSection, setSettingsDefaultSection] =
+    useState<SettingsSection>("appearance");
   const [mounted, setMounted] = useState(false);
   const { open: isSidebarOpen } = useSidebar();
   const { t } = useI18n();
@@ -71,6 +92,21 @@ export function WorkspaceNavMenu() {
         defaultSection={settingsDefaultSection}
       />
       <SidebarMenu className="w-full">
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            onClick={() => {
+              setSettingsDefaultSection("aiProvider");
+              setSettingsOpen(true);
+            }}
+            tooltip={t.settings.sections.aiProvider}
+          >
+            <NavQuickActionContent
+              isSidebarOpen={isSidebarOpen}
+              icon={CloudIcon}
+              label={t.settings.sections.aiProvider}
+            />
+          </SidebarMenuButton>
+        </SidebarMenuItem>
         <SidebarMenuItem>
           {mounted ? (
             <DropdownMenu>
@@ -109,7 +145,7 @@ export function WorkspaceNavMenu() {
                     </DropdownMenuItem>
                   </a>
                   <a
-                    href="https://github.com/bytedance/deer-flow"
+                    href="https://github.com/kairowan/aura"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -120,7 +156,7 @@ export function WorkspaceNavMenu() {
                   </a>
                   <DropdownMenuSeparator />
                   <a
-                    href="https://github.com/bytedance/deer-flow/issues"
+                    href="https://github.com/kairowan/aura/issues"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

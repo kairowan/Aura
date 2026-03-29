@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Res
 from app.gateway.path_utils import resolve_thread_virtual_path
 
 logger = logging.getLogger(__name__)
+mimetypes.add_type("application/xml", ".drawio")
 
 router = APIRouter(prefix="/api", tags=["artifacts"])
 

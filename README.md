@@ -23,7 +23,7 @@ While the original Aura is incredibly powerful, its deployment process is heavil
 
 **The core goal of this project** is to completely productize this powerful Agent engine for everyday users:
 
-1. **💻 Native Desktop Clients**: Breaking out of the browser by providing standalone `.exe` (Windows) and `.dmg` (macOS) applications.
+1. **💻 Native Desktop Clients**: Breaking out of the browser by providing standalone `.exe` (Windows), `.dmg` (macOS), and Linux desktop packages.
 2. **⚡ One-Line / One-Click Installation**: Abandoning complex `make dev` commands in favor of fully automated out-of-the-box deployment.
 3. **🔋 Drastic Performance Tuning**: Automatically running in production mode, turning off heavy CPU/Memory development watchers, making it run smoothly even on standard laptops.
 
@@ -46,7 +46,7 @@ iwr -useb https://raw.githubusercontent.com/kairowan/Aura/main/install.ps1 | iex
 ```
 
 ### Option 2: Build Desktop Client
-For the native standalone desktop experience, you can build the Electron wrappers for macOS or Windows natively:
+For the native standalone desktop experience, you can build the Electron wrappers for macOS, Windows, or Linux natively:
 
 ```bash
 cd desktop
@@ -54,7 +54,13 @@ npm install
 npm run dist:mac  # Generates Aura-macOS.dmg inside desktop/dist
 # OR
 npm run dist:win  # Generates Aura-Windows.exe inside desktop/dist
+# OR
+npm run dist:linux  # Generates AppImage and deb packages inside desktop/dist
 ```
+
+### Option 3: Prepare Mobile Shell
+
+Aura now includes a Capacitor mobile shell scaffold in [`/mobile`](./mobile). It connects Android or iOS clients to a deployed Aura web workspace instead of embedding the local desktop runtime.
 
 ---
 
@@ -63,6 +69,7 @@ npm run dist:win  # Generates Aura-Windows.exe inside desktop/dist
 If you are a developer looking to contribute, the incredibly powerful underlying architecture of Aura (LangGraph, Skills, Tools) has been fully preserved.
 
 - **Fast Track macOS Start**: Double-click `start_optimized.command` in the project root to start the production-grade tuned servers.
+- **Mobile Shell**: See [`/mobile/README.md`](./mobile/README.md) for Android and iOS setup.
 
 ---
 

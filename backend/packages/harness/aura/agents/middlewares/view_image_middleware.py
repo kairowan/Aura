@@ -31,6 +31,7 @@ class ViewImageMiddleware(AgentMiddleware[ViewImageMiddlewareState]):
     """
 
     state_schema = ViewImageMiddlewareState
+    IMAGE_TOOL_NAMES = {"view_image", "desktop_capture_screenshot"}
 
     def _get_last_assistant_message(self, messages: list) -> AIMessage | None:
         """Get the last assistant message from the message list.
@@ -46,19 +47,19 @@ class ViewImageMiddleware(AgentMiddleware[ViewImageMiddlewareState]):
                 return msg
         return None
 
-    def _has_view_image_tool(self, message: AIMessage) -> bool:
-        """Check if the assistant message contains view_image tool calls.
+    def _has_image_tool(self, message: AIMessage) -> bool:
+        """Check if the assistant message contains image-producing tool calls.
 
         Args:
             message: Assistant message to check
 
         Returns:
-            True if message contains view_image tool calls
+            True if message contains supported image tool calls
         """
         if not hasattr(message, "tool_calls") or not message.tool_calls:
             return False
 
-        return any(tool_call.get("name") == "view_image" for tool_call in message.tool_calls)
+        return any(tool_call.get("name") in self.IMAGE_TOOL_NAMES for tool_call in message.tool_calls)
 
     def _all_tools_completed(self, messages: list, assistant_msg: AIMessage) -> bool:
         """Check if all tool calls in the assistant message have been completed.
@@ -143,8 +144,8 @@ class ViewImageMiddleware(AgentMiddleware[ViewImageMiddlewareState]):
         if not last_assistant_msg:
             return False
 
-        # Check if it has view_image tool calls
-        if not self._has_view_image_tool(last_assistant_msg):
+        # Check if it has image tool calls
+        if not self._has_image_tool(last_assistant_msg):
             return False
 
         # Check if all tools have been completed

@@ -6,6 +6,7 @@ import {
   FilePlayIcon,
   FileTextIcon,
   ImageIcon,
+  WorkflowIcon,
 } from "lucide-react";
 
 const extensionMap: Record<string, string> = {
@@ -91,6 +92,7 @@ const extensionMap: Record<string, string> = {
   yml: "yaml",
   toml: "toml",
   xml: "xml",
+  drawio: "xml",
   ini: "ini",
   env: "dotenv",
 
@@ -151,6 +153,13 @@ export function getFileExtension(filepath: string) {
   return filepath.split(".").pop()!.toLocaleLowerCase();
 }
 
+export function isDrawioFile(filepath: string) {
+  const normalized = getFileName(filepath).toLocaleLowerCase();
+  return (
+    normalized.endsWith(".drawio") || normalized.endsWith(".drawio.xml")
+  );
+}
+
 export function checkCodeFile(
   filepath: string,
 ):
@@ -171,6 +180,9 @@ export function checkCodeFile(
 }
 
 export function getFileExtensionDisplayName(filepath: string) {
+  if (isDrawioFile(filepath)) {
+    return "Draw.io";
+  }
   const fileName = getFileName(filepath);
   const extension = fileName.split(".").pop()!.toLocaleLowerCase();
   switch (extension) {
@@ -193,6 +205,9 @@ export function getFileExtensionDisplayName(filepath: string) {
 }
 
 export function getFileIcon(filepath: string, className?: string) {
+  if (isDrawioFile(filepath)) {
+    return <WorkflowIcon className={className} />;
+  }
   const extension = getFileExtension(filepath);
   const { isCodeFile } = checkCodeFile(filepath);
   switch (extension) {

@@ -43,6 +43,7 @@ import { useThread } from "../messages/context";
 import { Tooltip } from "../tooltip";
 
 import { useArtifacts } from "./context";
+import { DrawioPreview } from "./drawio-preview";
 
 export function ArtifactFileDetail({
   className,
@@ -80,9 +81,6 @@ export function ArtifactFileDetail({
     }
     return checkCodeFile(filepath);
   }, [filepath, isWriteFile, isSkillFile]);
-  const isSupportPreview = useMemo(() => {
-    return language === "html" || language === "markdown";
-  }, [language]);
   const { content } = useArtifactContent({
     threadId,
     filepath: filepathFromProps,
@@ -90,6 +88,21 @@ export function ArtifactFileDetail({
   });
 
   const displayContent = content ?? "";
+  const isDrawioArtifact = useMemo(() => {
+    const normalizedPath = filepath.toLowerCase();
+    const normalizedContent = displayContent.toLowerCase();
+    return (
+      normalizedPath.endsWith(".drawio") ||
+      normalizedPath.endsWith(".drawio.xml") ||
+      normalizedContent.includes("<mxfile") ||
+      normalizedContent.includes("<mxgraphmodel")
+    );
+  }, [displayContent, filepath]);
+  const isSupportPreview = useMemo(() => {
+    return (
+      language === "html" || language === "markdown" || isDrawioArtifact
+    );
+  }, [isDrawioArtifact, language]);
 
   const [viewMode, setViewMode] = useState<"code" | "preview">("code");
   const [isInstalling, setIsInstalling] = useState(false);
@@ -235,6 +248,9 @@ export function ArtifactFileDetail({
         </div>
       </ArtifactHeader>
       <ArtifactContent className="p-0">
+        {isSupportPreview &&
+          viewMode === "preview" &&
+          isDrawioArtifact && <DrawioPreview xml={displayContent} />}
         {isSupportPreview &&
           viewMode === "preview" &&
           (language === "markdown" || language === "html") && (

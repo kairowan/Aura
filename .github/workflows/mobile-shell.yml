@@ -1,0 +1,83 @@
+name: mobile-shell
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile-shell.yml"
+
+jobs:
+  android:
+    name: Android Shell
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install mobile dependencies
+        run: npm --prefix mobile install
+
+      - name: Generate Android project
+        run: npm --prefix mobile run add:android
+
+      - name: Sync mobile shell
+        run: npm --prefix mobile run sync
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+        working-directory: mobile/android
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aura-mobile-android-debug
+          path: mobile/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+  ios:
+    name: iOS Shell
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package.json
+
+      - name: Install mobile dependencies
+        run: npm --prefix mobile install
+
+      - name: Generate iOS project
+        run: npm --prefix mobile run add:ios
+
+      - name: Sync mobile shell
+        run: npm --prefix mobile run sync
+
+      - name: Build iOS simulator app
+        run: xcodebuild -project ios/App/App.xcodeproj -scheme App -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
+        working-directory: mobile

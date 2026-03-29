@@ -473,6 +473,8 @@ export function useThreads(
       return threads;
     },
     refetchOnWindowFocus: false,
+    retry: 10,
+    retryDelay: 1000,
   });
 }
 
