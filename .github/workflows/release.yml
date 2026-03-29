@@ -44,7 +44,8 @@ jobs:
         run: brew install tesseract
 
       - name: Build macOS package
-        run: npm --prefix desktop run dist:mac
+        run: npm run dist:mac
+        working-directory: desktop
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
@@ -90,7 +91,8 @@ jobs:
         run: pnpm --dir frontend install --frozen-lockfile
 
       - name: Build Windows package
-        run: npm --prefix desktop run "dist:win"
+        run: npm run dist:win
+        working-directory: desktop
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
@@ -137,7 +139,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libarchive-tools rpm
 
       - name: Build Linux packages
-        run: npm --prefix desktop run "dist:linux"
+        run: npm run dist:linux
+        working-directory: desktop
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
