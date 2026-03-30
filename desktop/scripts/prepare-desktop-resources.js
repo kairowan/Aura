@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -27,8 +28,72 @@ function copyFirstExisting(sourceCandidates, destinationPath, fallbackContent = 
   return { source: null, destinationPath };
 }
 
+function parseEnvContent(content) {
+  const values = {};
+  content.split(/\r?\n/).forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) {
+      return;
+    }
+
+    const normalized = trimmed.startsWith('export ') ? trimmed.slice(7) : trimmed;
+    const separatorIndex = normalized.indexOf('=');
+    if (separatorIndex === -1) {
+      return;
+    }
+
+    const key = normalized.slice(0, separatorIndex).trim();
+    let value = normalized.slice(separatorIndex + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    if (key) {
+      values[key] = value;
+    }
+  });
+  return values;
+}
+
+function ensureEnvDefaults(filePath, defaults) {
+  const existingContent = fs.existsSync(filePath)
+    ? fs.readFileSync(filePath, 'utf8')
+    : '';
+  const existingValues = parseEnvContent(existingContent);
+  const missingEntries = Object.entries(defaults).filter(([key]) => {
+    const value = existingValues[key];
+    return typeof value !== 'string' || value.length === 0;
+  });
+
+  if (missingEntries.length === 0) {
+    return;
+  }
+
+  const prefix = existingContent && !existingContent.endsWith('\n') ? '\n' : '';
+  const appended = missingEntries
+    .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+    .join('\n');
+  fs.writeFileSync(filePath, `${existingContent}${prefix}${appended}\n`, 'utf8');
+}
+
 function main() {
   emptyDir(outputDir);
+
+  const frontendEnvResult = copyFirstExisting(
+    [path.join(repoRoot, 'frontend', '.env'), path.join(repoRoot, 'frontend', '.env.example')],
+    path.join(outputDir, 'frontend.env'),
+    '',
+  );
+
+  ensureEnvDefaults(frontendEnvResult.destinationPath, {
+    NEXT_PUBLIC_BACKEND_BASE_URL: 'http://127.0.0.1:8001',
+    NEXT_PUBLIC_LANGGRAPH_BASE_URL: 'http://127.0.0.1:2024',
+    BETTER_AUTH_SECRET: `aura_desktop_build_${crypto.randomBytes(24).toString('hex')}`,
+    BETTER_AUTH_URL: 'http://127.0.0.1:3000',
+  });
 
   const results = [
     copyFirstExisting(
@@ -45,11 +110,7 @@ function main() {
       path.join(outputDir, 'root.env'),
       '',
     ),
-    copyFirstExisting(
-      [path.join(repoRoot, 'frontend', '.env'), path.join(repoRoot, 'frontend', '.env.example')],
-      path.join(outputDir, 'frontend.env'),
-      'NEXT_PUBLIC_BACKEND_BASE_URL="http://127.0.0.1:8001"\nNEXT_PUBLIC_LANGGRAPH_BASE_URL="http://127.0.0.1:2024"\nBETTER_AUTH_SECRET="aura_build_placeholder"\nBETTER_AUTH_URL="http://localhost:3000"\n',
-    ),
+    frontendEnvResult,
   ];
 
   fs.writeFileSync(path.join(outputDir, 'manifest.json'), JSON.stringify(results, null, 2));
