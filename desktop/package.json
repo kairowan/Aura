@@ -31,6 +31,7 @@
           "!**/__pycache__",
           "!**/.aura",
           "!**/.langgraph",
+          "!**/.langgraph_api",
           "!**/.pytest_cache",
           "!**/tests",
           "!**/docs"

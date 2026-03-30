@@ -126,6 +126,10 @@ function getBackendRuntimeEnvDir() {
   return path.join(getRuntimeBaseDir(), 'backend-venv');
 }
 
+function getRuntimeBackendSourceDir() {
+  return path.join(getRuntimeBaseDir(), 'backend-src');
+}
+
 function getRuntimeExtensionsConfigPath() {
   return path.join(getRuntimeBaseDir(), 'extensions_config.json');
 }
@@ -208,6 +212,41 @@ function syncSeedPath(srcPath, destPath, { overwrite = false } = {}) {
   if (!overwrite && fs.existsSync(destPath)) {
     return;
   }
+  fs.copyFileSync(srcPath, destPath);
+}
+
+function syncBackendSource(srcPath, destPath) {
+  if (!fs.existsSync(srcPath)) {
+    return;
+  }
+
+  const stat = fs.statSync(srcPath);
+  if (stat.isDirectory()) {
+    const basename = path.basename(srcPath);
+    if (
+      basename === '.venv' ||
+      basename === '.langgraph_api' ||
+      basename === '__pycache__' ||
+      basename === '.pytest_cache'
+    ) {
+      return;
+    }
+
+    ensureDir(destPath);
+    for (const entry of fs.readdirSync(srcPath, { withFileTypes: true })) {
+      syncBackendSource(
+        path.join(srcPath, entry.name),
+        path.join(destPath, entry.name),
+      );
+    }
+    return;
+  }
+
+  if (srcPath.endsWith('.pyc') || srcPath.endsWith('.pyo')) {
+    return;
+  }
+
+  ensureDir(path.dirname(destPath));
   fs.copyFileSync(srcPath, destPath);
 }
 
@@ -297,6 +336,7 @@ function createAuraServiceEnv(extraEnv = {}) {
       AURA_HOME: ensureDir(getAuraDataDir()),
       AURA_CONFIG_PATH: path.join(rootDir, 'config.yaml'),
       AURA_DESKTOP_AUTOMATION_ENABLED: 'true',
+      PYTHONDONTWRITEBYTECODE: '1',
       ...getBundledOcrEnv(),
       PYTHONPATH: buildBackendPythonPath(backendDir),
       CORS_ORIGINS: `http://localhost:${FRONTEND_PORT},http://127.0.0.1:${FRONTEND_PORT},http://localhost:3001,http://127.0.0.1:3001`,
@@ -535,20 +575,27 @@ async function runInitCommand(name, cmd, args, cwd, options = {}) {
 async function ensurePackagedBackendRuntime(backendDir) {
   const envDir = getBackendRuntimeEnvDir();
   const pythonPath = getPackagedBackendPython();
+  const runtimeBackendDir = getRuntimeBackendSourceDir();
   const lockfilePath = path.join(backendDir, 'uv.lock');
   const lockHash = hashFile(lockfilePath);
   const manifest = readBackendRuntimeManifest();
   const envReady = fs.existsSync(pythonPath);
+  const sourceReady = fs.existsSync(path.join(runtimeBackendDir, 'langgraph.json'));
   const manifestMatches =
     manifest &&
     manifest.lockHash === lockHash &&
     manifest.appVersion === app.getVersion();
 
-  if (envReady && manifestMatches) {
-    return envDir;
+  if (envReady && sourceReady && manifestMatches) {
+    return { envDir, runtimeBackendDir };
   }
 
   ensureDir(getRuntimeBaseDir());
+  if (!sourceReady || !manifestMatches) {
+    fs.rmSync(runtimeBackendDir, { recursive: true, force: true });
+    syncBackendSource(backendDir, runtimeBackendDir);
+  }
+
   updateLoadingStatus("正在准备 Python 运行环境...", "首次安装或版本更新时需要同步依赖");
 
   const runtimeEnv = createAuraServiceEnv({
@@ -578,14 +625,15 @@ async function ensurePackagedBackendRuntime(backendDir) {
     lockHash,
   });
 
-  return envDir;
+  return { envDir, runtimeBackendDir };
 }
 
 async function startAuraNativeBackend() {
   const startupStartedAt = Date.now();
-  const backendDir = path.join(rootDir, 'backend');
+  const bundledBackendDir = path.join(rootDir, 'backend');
   const frontendRuntime = resolveFrontendRuntime();
   let packagedBackendPython = null;
+  let backendDir = bundledBackendDir;
 
   updateLoadingStatus("正在初始化 Aura...", "正在准备极光工作区");
   
@@ -595,14 +643,14 @@ async function startAuraNativeBackend() {
   }
   
   // Optimization: Skip sync/install in production or if already present
-  const venvExists = fs.existsSync(path.join(backendDir, '.venv'));
+  const venvExists = fs.existsSync(path.join(bundledBackendDir, '.venv'));
   const modulesExist = fs.existsSync(path.join(frontendRuntime.cwd, 'node_modules'));
 
   if (!isPackaged) {
     try {
       if (!venvExists) {
         updateLoadingStatus("正在配置本地环境...", "初次运行需要一些时间");
-        await runInitCommand("Backend Sync", "uv", ["sync"], backendDir);
+        await runInitCommand("Backend Sync", "uv", ["sync"], bundledBackendDir);
       }
       if (!modulesExist) {
         updateLoadingStatus("正在准备前端组件...", "正在部署本地资源");
@@ -613,8 +661,9 @@ async function startAuraNativeBackend() {
     }
   } else {
     ensureRuntimeSeedData();
-    await ensurePackagedBackendRuntime(backendDir);
+    const runtimeInfo = await ensurePackagedBackendRuntime(bundledBackendDir);
     packagedBackendPython = getPackagedBackendPython();
+    backendDir = runtimeInfo.runtimeBackendDir;
   }
 
   // Multi-plex spawn the 3 core Aura services natively
