@@ -18,6 +18,7 @@
     "appId": "com.aura.desktop",
     "productName": "Aura",
     "icon": "icon.png",
+    "afterPack": "scripts/adhoc-sign-mac-app.js",
     "directories": {
       "output": "dist"
     },
