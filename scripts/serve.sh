@@ -89,6 +89,30 @@ fi
 
 "$REPO_ROOT/scripts/config-upgrade.sh"
 
+# ── Model config preflight ───────────────────────────────────────────────
+
+MODEL_CHECK_OUTPUT="$(cd backend && PYTHONPATH=. uv run python -c 'from aura.config.app_config import get_app_config; cfg = get_app_config(); print(f"__MODEL__:{cfg.models[0].name}" if cfg.models else "__NO_MODELS__")' 2>&1)"
+MODEL_CHECK_STATUS=$?
+MODEL_CHECK_LINE="$(printf '%s\n' "$MODEL_CHECK_OUTPUT" | tail -n 1)"
+
+if [ $MODEL_CHECK_STATUS -ne 0 ]; then
+    echo "✗ Failed to validate model configuration."
+    printf '%s\n' "$MODEL_CHECK_OUTPUT"
+    exit 1
+fi
+
+if [ "$MODEL_CHECK_LINE" = "__NO_MODELS__" ]; then
+    echo "✗ No chat models configured."
+    echo "  Add at least one entry under 'models:' in ./config.yaml,"
+    echo "  or save a provider from the UI so Aura can inject a custom model."
+    echo "  Example: uncomment and fill in the Anthropic or OpenAI model block in ./config.yaml."
+    exit 1
+fi
+
+if [ "${MODEL_CHECK_LINE#__MODEL__:}" != "$MODEL_CHECK_LINE" ]; then
+    echo "✓ Default model configured: ${MODEL_CHECK_LINE#__MODEL__:}"
+fi
+
 # ── Cleanup trap ─────────────────────────────────────────────────────────────
 
 cleanup() {
@@ -116,6 +140,13 @@ cleanup() {
 }
 trap cleanup INT TERM
 
+warn_langgraph_background_failure() {
+    echo ""
+    echo "⚠ LangGraph is still unavailable."
+    echo "  Aura UI is ready, but agent runs may fail until LangGraph finishes starting."
+    echo "  See logs/langgraph.log for details."
+}
+
 # ── Start services ────────────────────────────────────────────────────────────
 
 mkdir -p logs
@@ -133,16 +164,6 @@ echo "Starting LangGraph server..."
 CONFIG_LOG_LEVEL=$(grep -m1 '^log_level:' config.yaml 2>/dev/null | awk '{print $2}' | tr -d ' ')
 LANGGRAPH_LOG_LEVEL="${LANGGRAPH_LOG_LEVEL:-${CONFIG_LOG_LEVEL:-info}}"
 (cd backend && NO_COLOR=1 uv run langgraph dev --no-browser --allow-blocking --server-log-level $LANGGRAPH_LOG_LEVEL $LANGGRAPH_EXTRA_FLAGS > ../logs/langgraph.log 2>&1) &
-./scripts/wait-for-port.sh 2024 60 "LangGraph" || {
-    echo "  See logs/langgraph.log for details"
-    tail -20 logs/langgraph.log
-    if grep -qE "config_version|outdated|Environment variable .* not found|KeyError|ValidationError|config\.yaml" logs/langgraph.log 2>/dev/null; then
-        echo ""
-        echo "  Hint: This may be a configuration issue. Try running 'make config-upgrade' to update your config.yaml."
-    fi
-    cleanup
-}
-echo "✓ LangGraph server started on localhost:2024"
 
 echo "Starting Gateway API..."
 (cd backend && PYTHONPATH=. uv run uvicorn app.gateway.app:app --host 0.0.0.0 --port 8001 $GATEWAY_EXTRA_FLAGS > ../logs/gateway.log 2>&1) &
@@ -198,6 +219,15 @@ echo "     - Gateway:   logs/gateway.log"
 echo "     - Frontend:  logs/frontend.log"
 echo "     - Nginx:     logs/nginx.log"
 echo ""
+echo "  ⏳ LangGraph continues warming up in the background if needed."
 echo "Press Ctrl+C to stop all services"
+
+(
+    if ./scripts/wait-for-port.sh 2024 60 "LangGraph" >/dev/null 2>&1; then
+        echo "✓ LangGraph server started on localhost:2024"
+    else
+        warn_langgraph_background_failure
+    fi
+) &
 
 wait

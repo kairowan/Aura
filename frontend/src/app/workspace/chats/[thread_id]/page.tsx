@@ -13,6 +13,7 @@ import { ExportTrigger } from "@/components/workspace/export-trigger";
 import { InputBox } from "@/components/workspace/input-box";
 import { MessageList } from "@/components/workspace/messages";
 import { ThreadContext } from "@/components/workspace/messages/context";
+import { ProjectBindingChip } from "@/components/workspace/project-binding-chip";
 import { ThreadTitle } from "@/components/workspace/thread-title";
 import { TodoList } from "@/components/workspace/todo-list";
 import { TokenUsageIndicator } from "@/components/workspace/token-usage-indicator";
@@ -21,6 +22,7 @@ import { useI18n } from "@/core/i18n/hooks";
 import { useNotification } from "@/core/notification/hooks";
 import { useLocalSettings } from "@/core/settings";
 import { useThreadStream } from "@/core/threads/hooks";
+import { useThreadProjectBinding } from "@/core/threads/project-binding";
 import { textOfMessage } from "@/core/threads/utils";
 import { env } from "@/env";
 import { cn } from "@/lib/utils";
@@ -30,6 +32,8 @@ export default function ChatPage() {
   const [settings, setSettings] = useLocalSettings();
 
   const { threadId, isNewThread, setIsNewThread, isMock } = useThreadChat();
+  const { projectRoot, clearProjectRoot, pickProjectRoot, canUseDesktopPicker } =
+    useThreadProjectBinding(threadId);
   useSpecificChatMode();
 
   const { showNotification } = useNotification();
@@ -63,9 +67,11 @@ export default function ChatPage() {
 
   const handleSubmit = useCallback(
     (message: PromptInputMessage) => {
-      void sendMessage(threadId, message);
+      void sendMessage(threadId, message, {
+        project_root: projectRoot ?? null,
+      });
     },
-    [sendMessage, threadId],
+    [projectRoot, sendMessage, threadId],
   );
   const handleStop = useCallback(async () => {
     await thread.stop();
@@ -87,6 +93,13 @@ export default function ChatPage() {
               <ThreadTitle threadId={threadId} thread={thread} />
             </div>
             <div className="flex items-center gap-2">
+              <ProjectBindingChip
+                projectRoot={projectRoot}
+                canUseDesktopPicker={canUseDesktopPicker}
+                onPickProject={pickProjectRoot}
+                onClearProject={clearProjectRoot}
+                className="max-w-[22rem]"
+              />
               <TokenUsageIndicator messages={thread.messages} />
               <ExportTrigger threadId={threadId} />
               <ArtifactTrigger />

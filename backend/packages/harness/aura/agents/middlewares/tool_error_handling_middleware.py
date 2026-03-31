@@ -72,18 +72,25 @@ def _build_runtime_middlewares(
     lazy_init: bool = True,
 ) -> list[AgentMiddleware]:
     """Build shared base middlewares for agent execution."""
+    from aura.agents.middlewares.diagram_intent_middleware import DiagramIntentMiddleware
+    from aura.agents.middlewares.project_context_middleware import ProjectContextMiddleware
     from aura.agents.middlewares.thread_data_middleware import ThreadDataMiddleware
     from aura.sandbox.middleware import SandboxMiddleware
 
-    middlewares: list[AgentMiddleware] = [
-        ThreadDataMiddleware(lazy_init=lazy_init),
-        SandboxMiddleware(lazy_init=lazy_init),
-    ]
+    middlewares: list[AgentMiddleware] = [ThreadDataMiddleware(lazy_init=lazy_init)]
 
     if include_uploads:
         from aura.agents.middlewares.uploads_middleware import UploadsMiddleware
 
-        middlewares.insert(1, UploadsMiddleware())
+        middlewares.append(UploadsMiddleware())
+
+    middlewares.extend(
+        [
+            DiagramIntentMiddleware(),
+            ProjectContextMiddleware(),
+            SandboxMiddleware(lazy_init=lazy_init),
+        ]
+    )
 
     if include_dangling_tool_call_patch:
         from aura.agents.middlewares.dangling_tool_call_middleware import DanglingToolCallMiddleware

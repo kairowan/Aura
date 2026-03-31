@@ -13,6 +13,7 @@ import { ExportTrigger } from "@/components/workspace/export-trigger";
 import { InputBox } from "@/components/workspace/input-box";
 import { MessageList } from "@/components/workspace/messages";
 import { ThreadContext } from "@/components/workspace/messages/context";
+import { ProjectBindingChip } from "@/components/workspace/project-binding-chip";
 import { ThreadTitle } from "@/components/workspace/thread-title";
 import { TodoList } from "@/components/workspace/todo-list";
 import { TokenUsageIndicator } from "@/components/workspace/token-usage-indicator";
@@ -22,6 +23,7 @@ import { useI18n } from "@/core/i18n/hooks";
 import { useNotification } from "@/core/notification/hooks";
 import { useLocalSettings } from "@/core/settings";
 import { useThreadStream } from "@/core/threads/hooks";
+import { useThreadProjectBinding } from "@/core/threads/project-binding";
 import { textOfMessage } from "@/core/threads/utils";
 import { env } from "@/env";
 import { cn } from "@/lib/utils";
@@ -38,6 +40,8 @@ export default function AgentChatPage() {
   const { agent } = useAgent(agent_name);
 
   const { threadId, isNewThread, setIsNewThread } = useThreadChat();
+  const { projectRoot, clearProjectRoot, pickProjectRoot, canUseDesktopPicker } =
+    useThreadProjectBinding(threadId);
 
   const { showNotification } = useNotification();
   const [thread, sendMessage] = useThreadStream({
@@ -72,9 +76,12 @@ export default function AgentChatPage() {
 
   const handleSubmit = useCallback(
     (message: PromptInputMessage) => {
-      void sendMessage(threadId, message, { agent_name });
+      void sendMessage(threadId, message, {
+        agent_name,
+        project_root: projectRoot ?? null,
+      });
     },
-    [sendMessage, threadId, agent_name],
+    [agent_name, projectRoot, sendMessage, threadId],
   );
 
   const handleStop = useCallback(async () => {
@@ -104,7 +111,14 @@ export default function AgentChatPage() {
             <div className="flex w-full items-center text-sm font-medium">
               <ThreadTitle threadId={threadId} thread={thread} />
             </div>
-            <div className="mr-4 flex items-center">
+            <div className="mr-4 flex items-center gap-2">
+              <ProjectBindingChip
+                projectRoot={projectRoot}
+                canUseDesktopPicker={canUseDesktopPicker}
+                onPickProject={pickProjectRoot}
+                onClearProject={clearProjectRoot}
+                className="max-w-[22rem]"
+              />
               <Tooltip content={t.agents.newChat}>
                 <Button
                   size="sm"

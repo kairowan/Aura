@@ -24,11 +24,14 @@ logger = logging.getLogger(__name__)
 
 
 def _resolve_model_name(requested_model_name: str | None = None) -> str:
-    """Resolve a runtime model name safely, falling back to default if invalid. Returns None if no models are configured."""
+    """Resolve a runtime model name safely, falling back to the default configured model."""
     app_config = get_app_config()
     default_model_name = app_config.models[0].name if app_config.models else None
     if default_model_name is None:
-        raise ValueError("No chat models are configured. Please configure at least one model in config.yaml.")
+        raise ValueError(
+            "No chat models are configured. Add at least one entry under `models:` in config.yaml, "
+            "or save a custom provider configuration so Aura can inject the `custom-provider` model."
+        )
 
     if requested_model_name and app_config.get_model_config(requested_model_name):
         return requested_model_name
@@ -292,7 +295,10 @@ def make_lead_agent(config: RunnableConfig):
     model_config = app_config.get_model_config(model_name) if model_name else None
 
     if model_config is None:
-        raise ValueError("No chat model could be resolved. Please configure at least one model in config.yaml or provide a valid 'model_name'/'model' in the request.")
+        raise ValueError(
+            "No chat model could be resolved. Configure at least one model in config.yaml, "
+            "save a custom provider configuration, or pass a valid `model_name`/`model` in the request."
+        )
     if thinking_enabled and not model_config.supports_thinking:
         logger.warning(f"Thinking mode is enabled but model '{model_name}' does not support it; fallback to non-thinking mode.")
         thinking_enabled = False

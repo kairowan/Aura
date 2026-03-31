@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const waitOn = require('wait-on');
@@ -10,6 +10,7 @@ let isShuttingDown = false;
 const FRONTEND_PORT = 3000;
 const GATEWAY_PORT = 8001;
 const LANGGRAPH_PORT = 2024;
+const SELECT_PROJECT_DIRECTORY_CHANNEL = 'aura:select-project-directory';
 
 // Store process references so we can kill them later
 let processes = {
@@ -322,6 +323,75 @@ function writeBackendRuntimeManifest(data) {
   fs.writeFileSync(getBackendRuntimeManifestPath(), JSON.stringify(data, null, 2));
 }
 
+function getBackendRuntimeInstallMode() {
+  return 'non-editable-v1';
+}
+
+function findBackendSitePackagesDir(envDir) {
+  const libDir = path.join(envDir, 'lib');
+  if (!fs.existsSync(libDir)) {
+    return null;
+  }
+
+  const candidates = fs.readdirSync(libDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith('python'))
+    .map((entry) => path.join(libDir, entry.name, 'site-packages'));
+
+  return candidates.find((candidate) => fs.existsSync(candidate)) || null;
+}
+
+function hasEditableHarnessInstall(envDir) {
+  const sitePackagesDir = findBackendSitePackagesDir(envDir);
+  if (!sitePackagesDir) {
+    return false;
+  }
+
+  const harnessPthPath = path.join(sitePackagesDir, '_aura_harness.pth');
+  if (fs.existsSync(harnessPthPath)) {
+    return true;
+  }
+
+  const distInfoDir = fs.readdirSync(sitePackagesDir, { withFileTypes: true })
+    .find((entry) => entry.isDirectory() && entry.name.startsWith('aura_harness-') && entry.name.endsWith('.dist-info'));
+  if (!distInfoDir) {
+    return false;
+  }
+
+  const directUrlPath = path.join(sitePackagesDir, distInfoDir.name, 'direct_url.json');
+  if (!fs.existsSync(directUrlPath)) {
+    return false;
+  }
+
+  try {
+    const directUrl = JSON.parse(fs.readFileSync(directUrlPath, 'utf8'));
+    return Boolean(directUrl?.dir_info?.editable);
+  } catch {
+    return false;
+  }
+}
+
+function getBackendRuntimeState({ envDir, runtimeBackendDir, lockHash }) {
+  const pythonPath = getPackagedBackendPython();
+  const manifest = readBackendRuntimeManifest();
+  const envReady = fs.existsSync(pythonPath);
+  const sourceReady = fs.existsSync(path.join(runtimeBackendDir, 'langgraph.json'));
+  const editableHarnessInstall = envReady && hasEditableHarnessInstall(envDir);
+  const manifestMatches =
+    manifest &&
+    manifest.lockHash === lockHash &&
+    manifest.appVersion === app.getVersion() &&
+    manifest.bundleRoot === rootDir &&
+    manifest.installMode === getBackendRuntimeInstallMode();
+
+  return {
+    manifest,
+    envReady,
+    sourceReady,
+    editableHarnessInstall,
+    manifestMatches,
+  };
+}
+
 function createAuraServiceEnv(extraEnv = {}) {
   const backendDir = path.join(rootDir, 'backend');
   const packagedEnv = isPackaged
@@ -511,7 +581,8 @@ function createWindow() {
     icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
     }
   });
 
@@ -536,6 +607,28 @@ function createWindow() {
   });
 }
 
+function setupIPCHandlers() {
+  ipcMain.removeHandler(SELECT_PROJECT_DIRECTORY_CHANNEL);
+  ipcMain.handle(SELECT_PROJECT_DIRECTORY_CHANNEL, async () => {
+    const ownerWindow = mainWindow || BrowserWindow.getFocusedWindow();
+    const result = await dialog.showOpenDialog(ownerWindow ?? undefined, {
+      title: '选择项目文件夹',
+      properties: ['openDirectory'],
+      buttonLabel: '绑定到当前线程',
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+
+    const selectedPath = result.filePaths[0];
+    return {
+      path: selectedPath,
+      name: path.basename(selectedPath),
+    };
+  });
+}
+
 function startSubProcess(name, cmd, args, cwd, options = {}) {
   console.log(`[STARTING] ${name} in ${cwd}...`);
   const isWindows = process.platform === 'win32';
@@ -548,8 +641,8 @@ function startSubProcess(name, cmd, args, cwd, options = {}) {
     detached: !isWindows 
   });
 
-  child.stdout.on('data', (data) => console.log(`[${name}] ${data}`));
-  child.stderr.on('data', (data) => console.error(`[${name} ERROR] ${data}`));
+  child.stdout.on('data', (data) => forwardProcessOutput(name, data, false));
+  child.stderr.on('data', (data) => forwardProcessOutput(name, data, true));
   
   child.on('close', (code) => {
     console.log(`[${name}] Exited with code ${code}`);
@@ -558,13 +651,47 @@ function startSubProcess(name, cmd, args, cwd, options = {}) {
   return child;
 }
 
+function forwardProcessOutput(name, data, isStderr = false) {
+  const text = String(data);
+  const lines = text.split(/\r?\n/).filter((line) => line.length > 0);
+  for (const line of lines) {
+    if (!isStderr) {
+      console.log(`[${name}] ${line}`);
+      continue;
+    }
+
+    if (
+      line.includes(" - INFO - ") ||
+      line.startsWith("INFO:") ||
+      line.includes("[info")
+    ) {
+      console.log(`[${name}] ${line}`);
+      continue;
+    }
+
+    if (
+      line.includes(" - WARNING - ") ||
+      line.startsWith("WARNING:") ||
+      line.includes("[warning")
+    ) {
+      console.warn(`[${name} WARN] ${line}`);
+      continue;
+    }
+
+    console.error(`[${name} ERROR] ${line}`);
+  }
+}
+
 async function runInitCommand(name, cmd, args, cwd, options = {}) {
   console.log(`[INIT] Running ${name} setup...`);
   const { env = createAuraServiceEnv(), shell = true } = options;
   return new Promise((resolve, reject) => {
     const child = spawn(cmd, args, { cwd, shell, env });
-    child.stdout.on('data', (d) => console.log(`[${name}] ${d}`));
-    child.stderr.on('data', (d) => console.error(`[${name} ERR] ${d}`));
+    child.stdout.on('data', (d) => forwardProcessOutput(name, d, false));
+    child.stderr.on('data', (d) => forwardProcessOutput(name, d, true));
+    child.on('error', (error) => {
+      reject(new Error(`${name} failed to start: ${error.message}`));
+    });
     child.on('close', (code) => {
       if (code === 0) resolve();
       else reject(new Error(`${name} failed with code ${code}`));
@@ -574,26 +701,27 @@ async function runInitCommand(name, cmd, args, cwd, options = {}) {
 
 async function ensurePackagedBackendRuntime(backendDir) {
   const envDir = getBackendRuntimeEnvDir();
-  const pythonPath = getPackagedBackendPython();
   const runtimeBackendDir = getRuntimeBackendSourceDir();
   const lockfilePath = path.join(backendDir, 'uv.lock');
   const lockHash = hashFile(lockfilePath);
-  const manifest = readBackendRuntimeManifest();
-  const envReady = fs.existsSync(pythonPath);
-  const sourceReady = fs.existsSync(path.join(runtimeBackendDir, 'langgraph.json'));
-  const manifestMatches =
-    manifest &&
-    manifest.lockHash === lockHash &&
-    manifest.appVersion === app.getVersion();
+  const runtimeState = getBackendRuntimeState({ envDir, runtimeBackendDir, lockHash });
+  const needsRefresh =
+    !runtimeState.envReady ||
+    !runtimeState.sourceReady ||
+    !runtimeState.manifestMatches ||
+    runtimeState.editableHarnessInstall;
 
-  if (envReady && sourceReady && manifestMatches) {
+  if (!needsRefresh) {
     return { envDir, runtimeBackendDir };
   }
 
   ensureDir(getRuntimeBaseDir());
-  if (!sourceReady || !manifestMatches) {
+  if (!runtimeState.sourceReady || !runtimeState.manifestMatches) {
     fs.rmSync(runtimeBackendDir, { recursive: true, force: true });
     syncBackendSource(backendDir, runtimeBackendDir);
+  }
+  if (runtimeState.editableHarnessInstall || !runtimeState.envReady || !runtimeState.manifestMatches) {
+    fs.rmSync(envDir, { recursive: true, force: true });
   }
 
   updateLoadingStatus("正在准备 Python 运行环境...", "首次安装或版本更新时需要同步依赖");
@@ -602,27 +730,39 @@ async function ensurePackagedBackendRuntime(backendDir) {
     VIRTUAL_ENV: envDir,
   });
 
-  if (!envReady) {
+  try {
+    if (!runtimeState.envReady || runtimeState.editableHarnessInstall || !runtimeState.manifestMatches) {
+      await runInitCommand(
+        "Backend Venv",
+        "uv",
+        ["venv", envDir],
+        backendDir,
+        { env: runtimeEnv, shell: false },
+      );
+    }
+
     await runInitCommand(
-      "Backend Venv",
+      "Backend Sync",
       "uv",
-      ["venv", envDir],
+      ["sync", "--frozen", "--no-dev", "--active", "--no-editable"],
       backendDir,
       { env: runtimeEnv, shell: false },
     );
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    if (detail.includes('spawn uv ENOENT')) {
+      throw new Error(
+        "Aura 无法准备后端运行环境，因为当前机器上没有找到 uv。\n请先安装 uv，或使用包含预构建后端运行时的安装包。",
+      );
+    }
+    throw error;
   }
-
-  await runInitCommand(
-    "Backend Sync",
-    "uv",
-    ["sync", "--frozen", "--no-dev", "--active"],
-    backendDir,
-    { env: runtimeEnv, shell: false },
-  );
 
   writeBackendRuntimeManifest({
     appVersion: app.getVersion(),
     lockHash,
+    bundleRoot: rootDir,
+    installMode: getBackendRuntimeInstallMode(),
   });
 
   return { envDir, runtimeBackendDir };
@@ -804,6 +944,7 @@ async function killProcesses() {
 }
 
 app.whenReady().then(async () => {
+  setupIPCHandlers();
   createWindow();
   try {
     await startAuraNativeBackend();

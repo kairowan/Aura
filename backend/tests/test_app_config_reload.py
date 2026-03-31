@@ -7,6 +7,7 @@ from pathlib import Path
 import yaml
 
 from aura.config.app_config import get_app_config, reset_app_config
+from aura.config import paths as paths_module
 
 
 def _write_config(path: Path, *, model_name: str, supports_thinking: bool) -> None:
@@ -155,6 +156,50 @@ def test_get_app_config_injects_custom_provider_with_base_url(tmp_path, monkeypa
         assert "api_base" not in config.models[0].model_extra
     finally:
         reset_app_config()
+        paths_module._paths = None
+
+
+def test_get_app_config_injects_custom_provider_from_backend_aura_dir(tmp_path, monkeypatch):
+    config_path = tmp_path / "config.yaml"
+    extensions_path = tmp_path / "extensions_config.json"
+    backend_dir = tmp_path / "backend"
+    provider_path = backend_dir / ".aura" / "provider_config.json"
+
+    backend_dir.mkdir(parents=True)
+    provider_path.parent.mkdir(parents=True)
+    _write_extensions_config(extensions_path)
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "sandbox": {"use": "aura.sandbox.local:LocalSandboxProvider"},
+                "models": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    _write_provider_config(
+        provider_path,
+        base_url="https://example.com/glm/v1",
+        api_key="glm-key",
+        model_id="GLM-4.7",
+    )
+
+    monkeypatch.chdir(backend_dir)
+    monkeypatch.setenv("AURA_CONFIG_PATH", str(config_path))
+    monkeypatch.setenv("AURA_EXTENSIONS_CONFIG_PATH", str(extensions_path))
+    monkeypatch.delenv("AURA_PROVIDER_CONFIG_PATH", raising=False)
+    monkeypatch.delenv("AURA_HOME", raising=False)
+    paths_module._paths = None
+    reset_app_config()
+
+    try:
+        config = get_app_config()
+        assert config.models[0].name == "custom-provider"
+        assert config.models[0].model == "GLM-4.7"
+        assert config.models[0].model_extra["base_url"] == "https://example.com/glm/v1"
+    finally:
+        reset_app_config()
+        paths_module._paths = None
 
 
 def test_get_app_config_reloads_when_provider_config_changes_and_config_is_touched(tmp_path, monkeypatch):
@@ -203,6 +248,7 @@ def test_get_app_config_reloads_when_provider_config_changes_and_config_is_touch
         assert reloaded is not initial
     finally:
         reset_app_config()
+        paths_module._paths = None
 
 
 def test_get_app_config_merges_runtime_channels_overlay(tmp_path, monkeypatch):
@@ -241,3 +287,4 @@ def test_get_app_config_merges_runtime_channels_overlay(tmp_path, monkeypatch):
         assert channels["telegram"]["session"]["assistant_id"] == "mobile_agent"
     finally:
         reset_app_config()
+        paths_module._paths = None

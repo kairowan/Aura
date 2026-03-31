@@ -202,7 +202,12 @@ class AioSandboxProvider(SandboxProvider):
             # ACP workspace: read-only inside the sandbox (lead agent reads results;
             # the ACP subprocess writes from the host side, not from within the container).
             (str(host_paths.acp_workspace_dir(thread_id)), "/mnt/acp-workspace", True),
-        ]
+        ] + (
+            [(str(host_paths.sandbox_project_mount_path(thread_id)), "/mnt/project", False)]
+            if host_paths.sandbox_project_mount_path(thread_id).exists()
+            or host_paths.sandbox_project_mount_path(thread_id).is_symlink()
+            else []
+        )
 
     @staticmethod
     def _get_skills_mount() -> tuple[str, str, bool] | None:

@@ -1,3 +1,5 @@
+import shutil
+from pathlib import Path
 from typing import NotRequired, override
 
 from langchain.agents import AgentState
@@ -58,6 +60,66 @@ class ThreadDataMiddleware(AgentMiddleware[ThreadDataMiddlewareState]):
             "outputs_path": str(self._paths.sandbox_outputs_dir(thread_id)),
         }
 
+    def _normalize_project_root(self, value: object, *, strict: bool) -> Path | None:
+        """Normalize a user-provided project root into a usable absolute directory."""
+        if value is None or value == "":
+            return None
+        if not isinstance(value, str):
+            if strict:
+                raise ValueError("Project root must be a string path.")
+            return None
+
+        candidate = Path(value).expanduser()
+        if not candidate.is_absolute():
+            if strict:
+                raise ValueError("Project root must be an absolute path.")
+            return None
+
+        try:
+            resolved = candidate.resolve()
+        except OSError:
+            if strict:
+                raise ValueError("Project root could not be resolved.")
+            return None
+
+        if not resolved.exists() or not resolved.is_dir():
+            if strict:
+                raise ValueError("Project root must point to an existing directory.")
+            return None
+
+        return resolved
+
+    def _sync_project_mount(self, thread_id: str, project_root: Path | None) -> str | None:
+        """Create or clear the thread-local project mount point."""
+        mount_path = self._paths.sandbox_project_mount_path(thread_id)
+        mount_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if mount_path.exists() or mount_path.is_symlink():
+            same_target = False
+            if project_root is not None:
+                try:
+                    same_target = mount_path.resolve() == project_root
+                except OSError:
+                    same_target = False
+
+            if same_target:
+                return str(mount_path)
+
+            if mount_path.is_symlink() or mount_path.is_file():
+                mount_path.unlink()
+            elif mount_path.is_dir():
+                shutil.rmtree(mount_path)
+
+        if project_root is None:
+            return None
+
+        try:
+            mount_path.symlink_to(project_root, target_is_directory=True)
+            return str(mount_path)
+        except OSError:
+            # Fallback for environments that do not allow symlink creation.
+            return str(project_root)
+
     def _create_thread_directories(self, thread_id: str) -> dict[str, str]:
         """Create the thread data directories.
 
@@ -73,6 +135,7 @@ class ThreadDataMiddleware(AgentMiddleware[ThreadDataMiddlewareState]):
     @override
     def before_agent(self, state: ThreadDataMiddlewareState, runtime: Runtime) -> dict | None:
         context = runtime.context or {}
+        existing_thread_data = state.get("thread_data") or {}
         thread_id = context.get("thread_id")
         if thread_id is None:
             config = get_config()
@@ -89,8 +152,15 @@ class ThreadDataMiddleware(AgentMiddleware[ThreadDataMiddlewareState]):
             paths = self._create_thread_directories(thread_id)
             print(f"Created thread data directories for thread {thread_id}")
 
+        has_explicit_project_root = "project_root" in context
+        project_root_value = context.get("project_root") if has_explicit_project_root else existing_thread_data.get("project_root_path")
+        project_root = self._normalize_project_root(project_root_value, strict=has_explicit_project_root)
+        project_mount_path = self._sync_project_mount(thread_id, project_root)
+
         return {
             "thread_data": {
                 **paths,
+                "project_root_path": str(project_root) if project_root is not None else None,
+                "project_mount_path": project_mount_path,
             }
         }

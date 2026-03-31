@@ -53,6 +53,30 @@ fi
 
 "$REPO_ROOT/scripts/config-upgrade.sh"
 
+# ── Model config preflight ───────────────────────────────────────────────
+
+MODEL_CHECK_OUTPUT="$(cd backend && PYTHONPATH=. uv run python -c 'from aura.config.app_config import get_app_config; cfg = get_app_config(); print(f"__MODEL__:{cfg.models[0].name}" if cfg.models else "__NO_MODELS__")' 2>&1)"
+MODEL_CHECK_STATUS=$?
+MODEL_CHECK_LINE="$(printf '%s\n' "$MODEL_CHECK_OUTPUT" | tail -n 1)"
+
+if [ $MODEL_CHECK_STATUS -ne 0 ]; then
+    echo "✗ Failed to validate model configuration."
+    printf '%s\n' "$MODEL_CHECK_OUTPUT"
+    exit 1
+fi
+
+if [ "$MODEL_CHECK_LINE" = "__NO_MODELS__" ]; then
+    echo "✗ No chat models configured."
+    echo "  Add at least one entry under 'models:' in ./config.yaml,"
+    echo "  or save a provider from the UI so Aura can inject a custom model."
+    echo "  Example: uncomment and fill in the Anthropic or OpenAI model block in ./config.yaml."
+    exit 1
+fi
+
+if [ "${MODEL_CHECK_LINE#__MODEL__:}" != "$MODEL_CHECK_LINE" ]; then
+    echo "✓ Default model configured: ${MODEL_CHECK_LINE#__MODEL__:}"
+fi
+
 # ── Cleanup on failure ───────────────────────────────────────────────────────
 
 cleanup_on_failure() {
@@ -74,17 +98,6 @@ mkdir -p logs
 
 echo "Starting LangGraph server..."
 nohup sh -c 'cd backend && NO_COLOR=1 uv run langgraph dev --no-browser --allow-blocking --no-reload > ../logs/langgraph.log 2>&1' &
-./scripts/wait-for-port.sh 2024 60 "LangGraph" || {
-    echo "✗ LangGraph failed to start. Last log output:"
-    tail -60 logs/langgraph.log
-    if grep -qE "config_version|outdated|Environment variable .* not found|KeyError|ValidationError|config\.yaml" logs/langgraph.log 2>/dev/null; then
-        echo ""
-        echo "  Hint: This may be a configuration issue. Try running 'make config-upgrade' to update your config.yaml."
-    fi
-    cleanup_on_failure
-    exit 1
-}
-echo "✓ LangGraph server started on localhost:2024"
 
 echo "Starting Gateway API..."
 nohup sh -c 'cd backend && PYTHONPATH=. uv run uvicorn app.gateway.app:app --host 0.0.0.0 --port 8001 > ../logs/gateway.log 2>&1' &
@@ -135,5 +148,6 @@ echo " - Gateway: logs/gateway.log"
 echo " - Frontend: logs/frontend.log"
 echo " - Nginx: logs/nginx.log"
 echo ""
+echo " ⏳ LangGraph starts in the background and may still be warming up."
 echo " 🛑 Stop daemon: make stop"
 echo ""

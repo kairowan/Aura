@@ -1,14 +1,13 @@
-from pathlib import Path
 import json
 import logging
-import os
+from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from langchain.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage
 from starlette.concurrency import run_in_threadpool
 
-from aura.config.app_config import build_custom_provider_model_data
+from aura.config.app_config import AppConfig, build_custom_provider_model_data, resolve_provider_config_path
 from aura.config.model_config import ModelConfig
 from aura.reflection import resolve_class
 
@@ -16,20 +15,9 @@ router = APIRouter(prefix="/api/provider", tags=["provider"])
 logger = logging.getLogger(__name__)
 
 
-def _resolve_root_dir() -> Path:
-    """Resolve the project root directory for config touch fallback."""
-    root_dir = Path(os.getcwd())
-    if not (root_dir / ".aura").exists() and (root_dir.parent / ".aura").exists():
-        root_dir = root_dir.parent
-    return root_dir
-
-
 def _resolve_provider_config_path() -> Path:
-    """Resolve the provider config path, allowing desktop runtime override."""
-    env_path = os.getenv("AURA_PROVIDER_CONFIG_PATH")
-    if env_path:
-        return Path(env_path).expanduser()
-    return _resolve_root_dir() / ".aura" / "provider_config.json"
+    """Resolve the provider config path consistently with AppConfig loading."""
+    return resolve_provider_config_path()
 
 class ProviderConfig(BaseModel):
     """Model for AI Provider configuration."""
@@ -100,8 +88,7 @@ async def save_provider_config(config: ProviderConfig):
         
         # Touch config.yaml to trigger AppConfig reload if needed
         # (Though we'll also update AppConfig to check this file)
-        config_yaml_env = os.getenv("AURA_CONFIG_PATH")
-        config_yaml = Path(config_yaml_env).expanduser() if config_yaml_env else _resolve_root_dir() / "config.yaml"
+        config_yaml = AppConfig.resolve_config_path()
         if config_yaml.exists():
             config_yaml.touch()
             

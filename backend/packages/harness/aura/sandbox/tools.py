@@ -26,6 +26,7 @@ _LOCAL_BASH_SYSTEM_PATH_PREFIXES = (
 
 _DEFAULT_SKILLS_CONTAINER_PATH = "/mnt/skills"
 _ACP_WORKSPACE_VIRTUAL_PATH = "/mnt/acp-workspace"
+_PROJECT_ROOT_VIRTUAL_PATH = "/mnt/project"
 
 
 def _get_skills_container_path() -> str:
@@ -106,6 +107,11 @@ def _resolve_skills_path(path: str) -> str:
 def _is_acp_workspace_path(path: str) -> bool:
     """Check if a path is under the ACP workspace virtual path."""
     return path == _ACP_WORKSPACE_VIRTUAL_PATH or path.startswith(f"{_ACP_WORKSPACE_VIRTUAL_PATH}/")
+
+
+def _is_project_path(path: str) -> bool:
+    """Check if a path is under the thread-bound project virtual path."""
+    return path == _PROJECT_ROOT_VIRTUAL_PATH or path.startswith(f"{_PROJECT_ROOT_VIRTUAL_PATH}/")
 
 
 def _extract_thread_id_from_thread_data(thread_data: "ThreadDataState | None") -> str | None:
@@ -228,6 +234,7 @@ def replace_virtual_path(path: str, thread_data: ThreadDataState | None) -> str:
         /mnt/user-data/workspace/* -> thread_data['workspace_path']/*
         /mnt/user-data/uploads/* -> thread_data['uploads_path']/*
         /mnt/user-data/outputs/* -> thread_data['outputs_path']/*
+        /mnt/project/* -> thread_data['project_mount_path']/*
 
     Args:
         path: The path that may contain virtual path prefix.
@@ -261,6 +268,7 @@ def _thread_virtual_to_actual_mappings(thread_data: ThreadDataState) -> dict[str
     workspace = thread_data.get("workspace_path")
     uploads = thread_data.get("uploads_path")
     outputs = thread_data.get("outputs_path")
+    project_mount = thread_data.get("project_mount_path") or thread_data.get("project_root_path")
 
     if workspace:
         mappings[f"{VIRTUAL_PATH_PREFIX}/workspace"] = workspace
@@ -268,6 +276,8 @@ def _thread_virtual_to_actual_mappings(thread_data: ThreadDataState) -> dict[str
         mappings[f"{VIRTUAL_PATH_PREFIX}/uploads"] = uploads
     if outputs:
         mappings[f"{VIRTUAL_PATH_PREFIX}/outputs"] = outputs
+    if project_mount:
+        mappings[_PROJECT_ROOT_VIRTUAL_PATH] = project_mount
 
     # Also map the virtual root when all known dirs share the same parent.
     actual_dirs = [Path(p) for p in (workspace, uploads, outputs) if p]
@@ -377,6 +387,7 @@ def validate_local_tool_path(path: str, thread_data: ThreadDataState | None, *, 
       - ``/mnt/user-data/*``  — always allowed (read + write)
       - ``/mnt/skills/*``     — allowed only when *read_only* is True
       - ``/mnt/acp-workspace/*`` — allowed only when *read_only* is True
+      - ``/mnt/project/*`` — allowed when a project is bound to the thread
 
     Args:
         path: The virtual path to validate.
@@ -404,11 +415,19 @@ def validate_local_tool_path(path: str, thread_data: ThreadDataState | None, *, 
             raise PermissionError(f"Write access to ACP workspace is not allowed: {path}")
         return
 
+    # Project path — read/write access when a project is bound to the thread
+    if _is_project_path(path):
+        if not (thread_data.get("project_mount_path") or thread_data.get("project_root_path")):
+            raise PermissionError("No project directory is bound to this thread. Bind a project first before using /mnt/project.")
+        return
+
     # User-data paths
     if path.startswith(f"{VIRTUAL_PATH_PREFIX}/"):
         return
 
-    raise PermissionError(f"Only paths under {VIRTUAL_PATH_PREFIX}/, {_get_skills_container_path()}/, or {_ACP_WORKSPACE_VIRTUAL_PATH}/ are allowed")
+    raise PermissionError(
+        f"Only paths under {VIRTUAL_PATH_PREFIX}/, {_PROJECT_ROOT_VIRTUAL_PATH}/, {_get_skills_container_path()}/, or {_ACP_WORKSPACE_VIRTUAL_PATH}/ are allowed"
+    )
 
 
 def _validate_resolved_user_data_path(resolved: Path, thread_data: ThreadDataState) -> None:
@@ -422,6 +441,7 @@ def _validate_resolved_user_data_path(resolved: Path, thread_data: ThreadDataSta
             thread_data.get("workspace_path"),
             thread_data.get("uploads_path"),
             thread_data.get("outputs_path"),
+            thread_data.get("project_mount_path") or thread_data.get("project_root_path"),
         )
         if p is not None
     ]
@@ -480,6 +500,12 @@ def validate_local_bash_command_paths(command: str, thread_data: ThreadDataState
             _reject_path_traversal(absolute_path)
             continue
 
+        if _is_project_path(absolute_path):
+            if not (thread_data.get("project_mount_path") or thread_data.get("project_root_path")):
+                raise PermissionError("No project directory is bound to this thread. Bind a project first before using /mnt/project.")
+            _reject_path_traversal(absolute_path)
+            continue
+
         if any(absolute_path == prefix.rstrip("/") or absolute_path.startswith(prefix) for prefix in _LOCAL_BASH_SYSTEM_PATH_PREFIXES):
             continue
 
@@ -487,7 +513,7 @@ def validate_local_bash_command_paths(command: str, thread_data: ThreadDataState
 
     if unsafe_paths:
         unsafe = ", ".join(sorted(dict.fromkeys(unsafe_paths)))
-        raise PermissionError(f"Unsafe absolute paths in command: {unsafe}. Use paths under {VIRTUAL_PATH_PREFIX}")
+        raise PermissionError(f"Unsafe absolute paths in command: {unsafe}. Use paths under {VIRTUAL_PATH_PREFIX} or {_PROJECT_ROOT_VIRTUAL_PATH}")
 
 
 def replace_virtual_paths_in_command(command: str, thread_data: ThreadDataState | None) -> str:
@@ -523,6 +549,17 @@ def replace_virtual_paths_in_command(command: str, thread_data: ThreadDataState 
             return _resolve_acp_workspace_path(match.group(0), _tid)
 
         result = acp_pattern.sub(replace_acp_match, result)
+
+    # Replace project paths
+    if thread_data is not None and _PROJECT_ROOT_VIRTUAL_PATH in result:
+        project_mount = thread_data.get("project_mount_path") or thread_data.get("project_root_path")
+        if project_mount:
+            project_pattern = re.compile(rf"{re.escape(_PROJECT_ROOT_VIRTUAL_PATH)}(/[^\s\"';&|<>()]*)?")
+
+            def replace_project_match(match: re.Match) -> str:
+                return replace_virtual_path(match.group(0), thread_data)
+
+            result = project_pattern.sub(replace_project_match, result)
 
     # Replace user-data paths
     if VIRTUAL_PATH_PREFIX in result and thread_data is not None:
@@ -689,6 +726,7 @@ def bash_tool(runtime: ToolRuntime[ContextT, ThreadState], description: str, com
     - Use `python` to run Python code.
     - Prefer a thread-local virtual environment in `/mnt/user-data/workspace/.venv`.
     - Use `python -m pip` (inside the virtual environment) to install Python packages.
+    - If a project is bound to the thread, it is available at `/mnt/project`.
 
     Args:
         description: Explain why you are running this command in short words. ALWAYS PROVIDE THIS PARAMETER FIRST.

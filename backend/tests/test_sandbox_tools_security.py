@@ -6,6 +6,7 @@ import pytest
 from aura.sandbox.tools import (
     VIRTUAL_PATH_PREFIX,
     _is_acp_workspace_path,
+    _is_project_path,
     _is_skills_path,
     _reject_path_traversal,
     _resolve_acp_workspace_path,
@@ -22,6 +23,8 @@ _THREAD_DATA = {
     "workspace_path": "/tmp/aura/threads/t1/user-data/workspace",
     "uploads_path": "/tmp/aura/threads/t1/user-data/uploads",
     "outputs_path": "/tmp/aura/threads/t1/user-data/outputs",
+    "project_root_path": "/Users/haonan/Projects/Aura Repo",
+    "project_mount_path": "/tmp/aura/threads/t1/project",
 }
 
 
@@ -101,6 +104,10 @@ def test_validate_local_tool_path_allows_user_data_paths() -> None:
     validate_local_tool_path(f"{VIRTUAL_PATH_PREFIX}/workspace/file.txt", _THREAD_DATA)
     validate_local_tool_path(f"{VIRTUAL_PATH_PREFIX}/uploads/doc.pdf", _THREAD_DATA)
     validate_local_tool_path(f"{VIRTUAL_PATH_PREFIX}/outputs/result.csv", _THREAD_DATA)
+
+
+def test_validate_local_tool_path_allows_project_paths() -> None:
+    validate_local_tool_path("/mnt/project/README.md", _THREAD_DATA)
 
 
 def test_validate_local_tool_path_allows_user_data_write() -> None:
@@ -192,6 +199,23 @@ def test_resolve_and_validate_user_data_path_blocks_traversal(tmp_path: Path) ->
         _resolve_and_validate_user_data_path("/mnt/user-data/workspace/../../../etc/passwd", thread_data)
 
 
+def test_resolve_and_validate_user_data_path_supports_project_mount(tmp_path: Path) -> None:
+    project_root = tmp_path / "repo with spaces"
+    project_root.mkdir()
+    project_mount = tmp_path / "project"
+    project_mount.symlink_to(project_root, target_is_directory=True)
+    thread_data = {
+        "workspace_path": str(tmp_path / "workspace"),
+        "uploads_path": str(tmp_path / "uploads"),
+        "outputs_path": str(tmp_path / "outputs"),
+        "project_root_path": str(project_root),
+        "project_mount_path": str(project_mount),
+    }
+
+    resolved = _resolve_and_validate_user_data_path("/mnt/project/src/main.py", thread_data)
+    assert resolved == str(project_root / "src" / "main.py")
+
+
 # ---------- replace_virtual_paths_in_command ----------
 
 
@@ -221,6 +245,13 @@ def test_replace_virtual_paths_in_command_replaces_both() -> None:
         assert "/tmp/aura/threads/t1/user-data/workspace/out.txt" in result
 
 
+def test_replace_virtual_paths_in_command_replaces_project_path() -> None:
+    cmd = "cd /mnt/project && ls /mnt/project/src"
+    result = replace_virtual_paths_in_command(cmd, _THREAD_DATA)
+    assert "/mnt/project" not in result
+    assert "/tmp/aura/threads/t1/project" in result
+
+
 # ---------- validate_local_bash_command_paths ----------
 
 
@@ -234,6 +265,10 @@ def test_validate_local_bash_command_paths_allows_virtual_and_system_paths() -> 
         "/bin/echo ok > /mnt/user-data/workspace/out.txt && cat /dev/null",
         _THREAD_DATA,
     )
+
+
+def test_validate_local_bash_command_paths_allows_project_path() -> None:
+    validate_local_bash_command_paths("cd /mnt/project && /bin/ls /mnt/project", _THREAD_DATA)
 
 
 def test_validate_local_bash_command_paths_blocks_traversal_in_user_data() -> None:
@@ -264,6 +299,12 @@ def test_is_skills_path_recognises_default_prefix() -> None:
         assert _is_skills_path("/mnt/skills/public/bootstrap/SKILL.md") is True
         assert _is_skills_path("/mnt/skills-extra/foo") is False
         assert _is_skills_path("/mnt/user-data/workspace") is False
+
+
+def test_is_project_path_recognises_prefix() -> None:
+    assert _is_project_path("/mnt/project") is True
+    assert _is_project_path("/mnt/project/src/index.ts") is True
+    assert _is_project_path("/mnt/project-extra/foo") is False
 
 
 def test_validate_local_tool_path_allows_skills_read_only() -> None:

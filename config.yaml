@@ -33,7 +33,7 @@ token_usage:
 # ============================================================================
 # Configure available LLM models for the agent to use
 
-models: [] # Custom provider will be injected from UI settings
+models: [] # Models can be injected from provider settings or added below.
   # Example: OpenAI model (Commented out)
   # - name: gpt-4
   #   display_name: GPT-4
@@ -113,7 +113,7 @@ models: [] # Custom provider will be injected from UI settings
   #   display_name: Kimi K2.5
   #   use: aura.models.patched_deepseek:PatchedChatDeepSeek
   #   model: kimi-k2.5
-  #   api_base: https://api.moonshot.cn/v1
+  #   base_url: https://api.moonshot.cn/v1
   #   api_key: $MOONSHOT_API_KEY
   #   max_tokens: 32768
   #   supports_thinking: true

@@ -11,13 +11,13 @@ import {
   WorkspaceHeader,
 } from "@/components/workspace/workspace-container";
 import { useI18n } from "@/core/i18n/hooks";
-import { useThreads } from "@/core/threads/hooks";
+import { ALL_THREADS_PARAMS, useThreads } from "@/core/threads/hooks";
 import { pathOfThread, titleOfThread } from "@/core/threads/utils";
 import { formatTimeAgo } from "@/core/utils/datetime";
 
 export default function ChatsPage() {
   const { t } = useI18n();
-  const { data: threads } = useThreads();
+  const { data: threads } = useThreads(ALL_THREADS_PARAMS);
   const [search, setSearch] = useState("");
 
   useEffect(() => {

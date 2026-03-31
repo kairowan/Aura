@@ -32,6 +32,18 @@ export type ThreadStreamOptions = {
   onToolEnd?: (event: ToolEndEvent) => void;
 };
 
+const DEFAULT_RECENT_THREADS_PARAMS = {
+  limit: 20,
+  sortBy: "updated_at",
+  sortOrder: "desc",
+  select: ["thread_id", "updated_at", "values"],
+} satisfies Parameters<ThreadsClient["search"]>[0];
+
+export const ALL_THREADS_PARAMS = {
+  ...DEFAULT_RECENT_THREADS_PARAMS,
+  limit: 100,
+} satisfies Parameters<ThreadsClient["search"]>[0];
+
 function getStreamErrorMessage(error: unknown): string {
   if (typeof error === "string" && error.trim()) {
     return error;
@@ -411,12 +423,7 @@ export function useThreadStream({
 }
 
 export function useThreads(
-  params: Parameters<ThreadsClient["search"]>[0] = {
-    limit: 50,
-    sortBy: "updated_at",
-    sortOrder: "desc",
-    select: ["thread_id", "updated_at", "values"],
-  },
+  params: Parameters<ThreadsClient["search"]>[0] = DEFAULT_RECENT_THREADS_PARAMS,
 ) {
   const apiClient = getAPIClient();
   return useQuery<AgentThread[]>({

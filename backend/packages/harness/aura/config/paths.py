@@ -142,6 +142,18 @@ class Paths:
         """
         return self.thread_dir(thread_id) / "acp-workspace"
 
+    def sandbox_project_mount_path(self, thread_id: str) -> Path:
+        """
+        Host path for the thread-local project mount.
+        Host: `{base_dir}/threads/{thread_id}/project/`
+        Sandbox: `/mnt/project/`
+
+        This is typically a symlink to a user-selected project root so the
+        agent can access a stable path even when the real project path contains
+        spaces or lives outside Aura's workspace.
+        """
+        return self.thread_dir(thread_id) / "project"
+
     def sandbox_user_data_dir(self, thread_id: str) -> Path:
         """
         Host path for the user-data root.

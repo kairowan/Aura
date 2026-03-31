@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from langgraph.runtime import Runtime
 
@@ -52,3 +54,53 @@ class TestThreadDataMiddleware:
 
         with pytest.raises(ValueError, match="Thread ID is required in runtime context or config.configurable"):
             middleware.before_agent(state={}, runtime=Runtime(context=None))
+
+    def test_before_agent_binds_project_root_and_creates_mount(self, tmp_path):
+        middleware = ThreadDataMiddleware(base_dir=str(tmp_path), lazy_init=True)
+        project_root = tmp_path / "repo with spaces"
+        project_root.mkdir()
+
+        result = middleware.before_agent(
+            state={},
+            runtime=Runtime(
+                context={
+                    "thread_id": "thread-123",
+                    "project_root": str(project_root),
+                }
+            ),
+        )
+
+        assert result is not None
+        thread_data = result["thread_data"]
+        assert thread_data["project_root_path"] == str(project_root.resolve())
+        assert thread_data["project_mount_path"] is not None
+        assert Path(thread_data["project_mount_path"]).exists() or Path(thread_data["project_mount_path"]).is_symlink()
+
+    def test_before_agent_clears_project_binding_when_context_sets_null(self, tmp_path):
+        middleware = ThreadDataMiddleware(base_dir=str(tmp_path), lazy_init=True)
+        project_root = tmp_path / "repo"
+        project_root.mkdir()
+
+        first = middleware.before_agent(
+            state={},
+            runtime=Runtime(
+                context={
+                    "thread_id": "thread-123",
+                    "project_root": str(project_root),
+                }
+            ),
+        )
+
+        cleared = middleware.before_agent(
+            state=first or {},
+            runtime=Runtime(
+                context={
+                    "thread_id": "thread-123",
+                    "project_root": None,
+                }
+            ),
+        )
+
+        assert cleared is not None
+        assert cleared["thread_data"]["project_root_path"] is None
+        assert cleared["thread_data"]["project_mount_path"] is None

@@ -71,6 +71,27 @@ def save_channels_config_overlay(config: dict[str, Any]) -> Path:
     return config_path
 
 
+def resolve_provider_config_path(config_path: Path | None = None) -> Path:
+    """Resolve the runtime provider config path.
+
+    Priority:
+    1. `AURA_PROVIDER_CONFIG_PATH` environment variable
+    2. `{AURA_HOME|base_dir}/provider_config.json`
+    3. Legacy fallback: sibling `.aura/provider_config.json` next to config.yaml
+    """
+    env_path = os.getenv("AURA_PROVIDER_CONFIG_PATH")
+    if env_path:
+        return Path(env_path).expanduser()
+
+    base_dir_candidate = get_paths().base_dir / "provider_config.json"
+    if base_dir_candidate.exists():
+        return base_dir_candidate
+
+    if config_path is not None:
+        return config_path.parent / ".aura" / "provider_config.json"
+    return base_dir_candidate
+
+
 def build_custom_provider_model_data(custom_config: dict[str, Any]) -> dict[str, Any] | None:
     """Build a transient model config from provider settings saved by the UI."""
     api_key = custom_config.get("api_key")
@@ -192,11 +213,7 @@ class AppConfig(BaseModel):
         config_data["extensions"] = extensions_config.model_dump()
 
         # Load custom provider config if present
-        provider_env_path = os.getenv("AURA_PROVIDER_CONFIG_PATH")
-        if provider_env_path:
-            custom_provider_path = Path(provider_env_path).expanduser()
-        else:
-            custom_provider_path = resolved_path.parent / ".aura" / "provider_config.json"
+        custom_provider_path = resolve_provider_config_path(resolved_path)
         if custom_provider_path.exists():
             try:
                 with open(custom_provider_path, "r", encoding="utf-8") as f:
